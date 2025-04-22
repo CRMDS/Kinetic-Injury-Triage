@@ -42,7 +42,7 @@ class BioClinicalBERTClassifier:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=True)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
 
-        # Optional extra dropout
+        # Dropout
         if dropout_prob is not None:
             self.model.config.hidden_dropout_prob = dropout_prob
             self.model.config.attention_probs_dropout_prob = dropout_prob
@@ -143,6 +143,7 @@ class BioClinicalBERTClassifier:
             self.optimizer, mode='min', factor=0.1, patience=3, threshold=0.001, verbose=debug
         )
 
+        final_metrics = {}
         for epoch in range(1, num_epochs+1):
             # Training
             self.model.train()
@@ -169,6 +170,7 @@ class BioClinicalBERTClassifier:
             val_time = time.time() - start_v
             total_val_time += val_time
             val_losses.append(val_loss)
+            final_metrics = metrics
 
             scheduler.step(val_loss)
             if val_loss < best_val_loss:
@@ -191,7 +193,6 @@ class BioClinicalBERTClassifier:
             if debug: print(f"Loaded best model (val_loss={best_val_loss:.4f})")
 
         # save per-epoch losses
-        # build opt_str with full config
         config_items = [f"{k}={v}" for k, v in self.optimizer_params.items()]
         if self.dropout_prob is not None:
             config_items.append(f"dropout={self.dropout_prob}")
@@ -207,8 +208,14 @@ class BioClinicalBERTClassifier:
         loss_df.to_csv(loss_csv, index=False)
         print(f"Saved losses to {loss_csv}")
 
-        # summary data
+        # compute confusion matrix details
+        cm = confusion_matrix(final_metrics['true_labels'], final_metrics['predictions'])
+        tn, fp, fn, tp = cm.ravel()
+
+        # early_stop_triggered boolean
         early_stop_triggered = len(train_losses) < num_epochs
+
+        # build summary data with all configs, metrics, and confusion matrix
         summary_data = {
             "model_name":              self.model_name,
             "num_labels":              self.num_labels,
@@ -223,10 +230,17 @@ class BioClinicalBERTClassifier:
             "epochs_ran":              len(train_losses),
             "best_val_loss":           best_val_loss,
             "total_train_time_s":      round(total_train_time, 2),
-            "total_val_time_s":        round(total_val_time, 2)
+            "total_val_time_s":        round(total_val_time, 2),
+            # metrics
+            "accuracy":                final_metrics.get('accuracy'),
+            "tn":                      int(tn),
+            "fp":                      int(fp),
+            "fn":                      int(fn),
+            "tp":                      int(tp)
         }
         print("Training summary details:", summary_data, flush=True)
 
+        # append to CSV
         summary_df = pd.DataFrame([summary_data])
         summary_file = "training_summary.csv"
         if not os.path.exists(summary_file):
@@ -235,12 +249,14 @@ class BioClinicalBERTClassifier:
             summary_df.to_csv(summary_file, mode="a", header=False, index=False)
         print(f"Appended summary to {summary_file}", flush=True)
 
-        return {**metrics,
-                "train_losses": train_losses,
-                "val_losses": val_losses,
-                "best_val_loss": best_val_loss,
-                "total_train_time": total_train_time,
-                "total_val_time": total_val_time}
+        return {
+            **final_metrics,
+            "train_losses": train_losses,
+            "val_losses": val_losses,
+            "best_val_loss": best_val_loss,
+            "total_train_time": total_train_time,
+            "total_val_time": total_val_time
+        }
 
     def evaluate_loss(self, loader, use_amp=True):
         self.model.eval()
