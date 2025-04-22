@@ -3,7 +3,7 @@
 """
 Created on Wed Feb 26 23:54:06 2025
 @model: Bio_ClinicalBERTClassifier.py
-@author: Midhun Shyam (mshyam)
+author: Midhun Shyam (mshyam)
 """
 
 import os
@@ -29,7 +29,7 @@ class BioClinicalBERTClassifier:
         verbose=True,
         seed=8,
         batch_size=16,
-        dropout_prob=False
+        dropout_prob=None
     ):
         self.model_name = model_name
         self.num_labels = num_labels
@@ -60,7 +60,7 @@ class BioClinicalBERTClassifier:
         self.freeze_model_layers()
         self.unfreeze_classifier_layer()
 
-        # Save initial weights
+        # Save initial state
         self._initial_state_dict = self.model.state_dict().copy()
 
     def configure_optimizer(self):
@@ -80,14 +80,14 @@ class BioClinicalBERTClassifier:
     def unfreeze_last_layers(self, n=1):
         num_layers = len(self.model.bert.encoder.layer)
         if n > num_layers:
-            raise ValueError(f"Cannot unfreeze {n} layers; model has only {num_layers}.")
+            raise ValueError(f"Cannot unfreeze {n} layers; model has only {num_layers} layers.")
         for i in range(num_layers - n, num_layers):
             for param in self.model.bert.encoder.layer[i].parameters():
                 param.requires_grad = True
 
     def check_layer_status(self):
         for name, param in self.model.named_parameters():
-            status = "True" if param.requires_grad else "False"
+            status = 'True' if param.requires_grad else 'False'
             print(f"{name}: requires_grad={status}")
 
     def dataframe_to_dataloader(self, df, shuffle=True, text_column="TEXT", label_column="LABEL", max_length=512):
@@ -119,13 +119,14 @@ class BioClinicalBERTClassifier:
         print_every=1
     ):
         scaler = GradScaler()
-        # stratified split
+
+        # stratified train/val split
         train_df, val_df = train_test_split(
             data, test_size=test_split, random_state=self.seed,
             stratify=data[label_column]
         )
         if debug:
-            print(f"Train/Val shapes: {train_df.shape} / {val_df.shape}")
+            print(f"Train shape: {train_df.shape}, Val shape: {val_df.shape}")
 
         train_loader = self.dataframe_to_dataloader(train_df, shuffle=shuffle_train,
                                                     text_column=text_column, label_column=label_column)
@@ -138,15 +139,14 @@ class BioClinicalBERTClassifier:
         best_weights = None
         no_improve = 0
 
-        # LR scheduler
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode='min', factor=0.1, patience=3, threshold=0.001, verbose=debug
         )
 
         for epoch in range(1, num_epochs+1):
-            # — Training —
+            # Training
             self.model.train()
-            start = time.time()
+            start_t = time.time()
             epoch_train_loss = 0.0
             for ids, masks, labs in train_loader:
                 ids, masks, labs = ids.to(self.device), masks.to(self.device), labs.to(self.device)
@@ -158,19 +158,18 @@ class BioClinicalBERTClassifier:
                 scaler.step(self.optimizer)
                 scaler.update()
                 epoch_train_loss += loss.item()
-            t_train = time.time() - start
-            total_train_time += t_train
+            train_time = time.time() - start_t
+            total_train_time += train_time
             avg_train = epoch_train_loss / len(train_loader)
             train_losses.append(avg_train)
 
-            # — Validation —
-            start = time.time()
+            # Validation
+            start_v = time.time()
             val_loss, metrics = self.evaluate_loss(val_loader, use_amp=True)
-            t_val = time.time() - start
-            total_val_time += t_val
+            val_time = time.time() - start_v
+            total_val_time += val_time
             val_losses.append(val_loss)
 
-            # LR step and early stop check
             scheduler.step(val_loss)
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
@@ -186,13 +185,19 @@ class BioClinicalBERTClassifier:
                 if debug: print(f"Early stopping at epoch {epoch}")
                 break
 
-        # load best
-        if best_weights:
+        # load best weights
+        if best_weights is not None:
             self.model.load_state_dict(best_weights)
             if debug: print(f"Loaded best model (val_loss={best_val_loss:.4f})")
 
         # save per-epoch losses
-        opt_str = f"{self.optimizer_class.__name__}_lr={self.optimizer_params.get('lr')}_wd={self.optimizer_params.get('weight_decay')}"
+        # build opt_str with full config
+        config_items = [f"{k}={v}" for k, v in self.optimizer_params.items()]
+        if self.dropout_prob is not None:
+            config_items.append(f"dropout={self.dropout_prob}")
+        config_items.extend([f"batch_size={self.batch_size}", f"seed={self.seed}"])
+        opt_str = f"{self.optimizer_class.__name__}_" + "_".join(config_items)
+
         loss_df = pd.DataFrame({
             "epoch": list(range(1, len(train_losses)+1)),
             "train_loss": train_losses,
@@ -202,37 +207,40 @@ class BioClinicalBERTClassifier:
         loss_df.to_csv(loss_csv, index=False)
         print(f"Saved losses to {loss_csv}")
 
-        # append training summary
-        summary = {
-            "optimizer": self.optimizer_class.__name__,
-            "learning_rate": self.optimizer_params.get("lr"),
-            "weight_decay": self.optimizer_params.get("weight_decay"),
-            "dropout_prob": self.dropout_prob,
-            "batch_size": self.batch_size,
-            "seed": self.seed,
-            "test_split": test_split,
-            "early_stop_patience": early_stop_patience,
-            "epochs_ran": len(train_losses),
-            "best_val_loss": best_val_loss,
-            "total_train_time_s": round(total_train_time, 2),
-            "total_val_time_s": round(total_val_time, 2)
+        # summary data
+        early_stop_triggered = len(train_losses) < num_epochs
+        summary_data = {
+            "model_name":              self.model_name,
+            "num_labels":              self.num_labels,
+            "optimizer":               self.optimizer_class.__name__,
+            **self.optimizer_params,
+            "dropout_prob":            self.dropout_prob,
+            "batch_size":              self.batch_size,
+            "seed":                    self.seed,
+            "test_split":              test_split,
+            "early_stop_patience":     early_stop_patience,
+            "early_stop_triggered":    early_stop_triggered,
+            "epochs_ran":              len(train_losses),
+            "best_val_loss":           best_val_loss,
+            "total_train_time_s":      round(total_train_time, 2),
+            "total_val_time_s":        round(total_val_time, 2)
         }
-        summary_df = pd.DataFrame([summary])
-        sum_file = "training_summary.csv"
-        if not os.path.exists(sum_file):
-            summary_df.to_csv(sum_file, index=False)
-        else:
-            summary_df.to_csv(sum_file, mode="a", header=False, index=False)
-        print(f"Appended summary to {sum_file}")
+        print("Training summary details:", summary_data, flush=True)
 
-        return {
-            "train_losses": train_losses,
-            "val_losses": val_losses,
-            "best_val_loss": best_val_loss,
-            "total_train_time": total_train_time,
-            "total_val_time": total_val_time,
-            **metrics
-        }
+        summary_df = pd.DataFrame([summary_data])
+        summary_file = "training_summary.csv"
+        if not os.path.exists(summary_file):
+            summary_df.to_csv(summary_file, index=False)
+        else:
+            summary_df.to_csv(summary_file, mode="a", header=False, index=False)
+        print(f"Appended summary to {summary_file}", flush=True)
+
+        return {**metrics,
+                "train_losses": train_losses,
+                "val_losses": val_losses,
+                "best_val_loss": best_val_loss,
+                "total_train_time": total_train_time,
+                "total_val_time": total_val_time}
 
     def evaluate_loss(self, loader, use_amp=True):
         self.model.eval()
@@ -241,7 +249,7 @@ class BioClinicalBERTClassifier:
         with torch.no_grad():
             for ids, masks, labs in loader:
                 ids, masks, labs = ids.to(self.device), masks.to(self.device), labs.to(self.device)
-                if use_amp and self.device.type=="cuda":
+                if use_amp and self.device.type == "cuda":
                     with autocast():
                         out = self.model(ids, attention_mask=masks, labels=labs)
                         loss = out.loss
@@ -309,6 +317,7 @@ class BioClinicalBERTClassifier:
         results = self._run_train_epoch(
             data=dataset,
             num_epochs=num_epochs,
+            test_split=0.2,
             early_stop_patience=early_stop_patience,
             text_column=text_column,
             label_column=label_column,
