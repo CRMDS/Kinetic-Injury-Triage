@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 @model: Bio_ClinicalBERTClassifier.py
-@script: train 
+@script: train
 @author: Midhun Shyam (M.Shyam)
 """
 
@@ -12,16 +12,16 @@ from torch.optim import AdamW, Adam, SGD
 
 
 def main(args):
+    # Load dataset
     df = pd.read_csv(args.data_path)
 
-    optimizer_dict = {"AdamW": AdamW, "Adam": Adam, "SGD": SGD}
-    if args.optimizer_class not in optimizer_dict:
+    # Validate primary_key argument
+    if args.primary_key is not None and args.primary_key not in df.columns:
         raise ValueError(
-            f"Invalid optimizer class: {args.optimizer_class}. "
-            f"Choose from {list(optimizer_dict.keys())}."
+            f"primary_key '{args.primary_key}' not found in DataFrame columns: {list(df.columns)}"
         )
-    optimizer_class = optimizer_dict[args.optimizer_class]
 
+    # Display configuration
     print("-" * 27)
     print("Configuration:")
     print(f"  Optimizer: {args.optimizer_class}")
@@ -32,8 +32,19 @@ def main(args):
     print(f"  Test Split: {args.test_split}")
     print(f"  Batch Size: {args.batch_size}")
     print(f"  Dropout Probability: {args.dropout_prob}")
+    print(f"  Primary Key: {args.primary_key}")
     print("-" * 27)
 
+    # Select optimizer
+    optimizer_dict = {"AdamW": AdamW, "Adam": Adam, "SGD": SGD}
+    if args.optimizer_class not in optimizer_dict:
+        raise ValueError(
+            f"Invalid optimizer class: {args.optimizer_class}. "
+            f"Choose from {list(optimizer_dict.keys())}."
+        )
+    optimizer_class = optimizer_dict[args.optimizer_class]
+
+    # Initialize classifier
     classifier = BioClinicalBERTClassifier(
         model_name=args.model_name,
         num_labels=args.num_labels,
@@ -45,15 +56,19 @@ def main(args):
         dropout_prob=args.dropout_prob
     )
 
+    # Unfreeze specified BERT layers
     if args.unfreeze_layers > 0:
         classifier.unfreeze_last_layers(args.unfreeze_layers)
 
+    # Load existing model weights if provided
     if args.model_weight_path:
         classifier.load_model(args.model_weight_path)
 
+    # Run training and save validation predictions
     results = classifier._run_train_epoch(
         df,
         num_epochs=args.num_epochs,
+        primary_key=args.primary_key,
         test_split=args.test_split,
         early_stop_patience=args.early_stop_patience,
         shuffle_train=True,
@@ -63,7 +78,7 @@ def main(args):
         print_every=args.print_every
     )
 
-
+    # Save fine-tuned model
     classifier.save_model(args.save_model_path)
     print(f"Fine-tuned model saved to {args.save_model_path}", flush=True)
 
@@ -86,6 +101,10 @@ if __name__ == "__main__":
     parser.add_argument("--save_model_path", type=str, required=True)
     parser.add_argument("--optimizer_class", type=str, default="AdamW")
     parser.add_argument("--unfreeze_layers", type=int, default=0)
+    parser.add_argument(
+        "--primary_key", type=str, default=None,
+        help="Column name to use as primary key for CSV predictions"
+    )
     parser.add_argument("--verbose", action="store_true", default=True)
     parser.add_argument("--debug", action="store_true", default=True)
     parser.add_argument("--print_every", type=int, default=10)
@@ -94,4 +113,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
-
