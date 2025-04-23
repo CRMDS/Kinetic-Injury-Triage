@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 26 23:54:06 2025
-@model: Bio_ClinicalBERTClassifier
+@model: Bio_ClinicalBERTClassifier 
 author: Midhun Shyam (M.Shyam)
 """
 
@@ -91,7 +91,7 @@ class BioClinicalBERTClassifier:
     def check_layer_status(self):
             for name, param in self.model.named_parameters():
                 status = 'True' if param.requires_grad else 'False'
-                print(f"{name}: requires_grad={status}")
+                print(f"{name}: requires_grad={status}")    
 
     def dataframe_to_dataloader(self, df, shuffle=True,
                                 text_column="TEXT", label_column="LABEL",
@@ -118,11 +118,11 @@ class BioClinicalBERTClassifier:
         scaler = GradScaler()
 
         cfg = {
-            'layers_unlocked': self.num_unfrozen_bert_layers,
+            'layers_unlocked': self.num_unfrozen_bert_layers,            
             'optimiser': self.optimizer_class.__name__,
             'seed': self.seed,
             'lr': self.optimizer_params.get('lr'),
-            'weight_decay': self.optimizer_params.get('weight_decay'),
+            'weight_decay': self.optimizer_params.get('weight_decay'), 
             'dropout': self.dropout_prob,
             'batch_size': self.batch_size,
         }
@@ -239,17 +239,15 @@ class BioClinicalBERTClassifier:
         pd.DataFrame([summary]).to_csv(summary_file, index=False, mode='a', header=header)
         print(f"Appended summary to {summary_file}")
 
-
-        test_preds_df = pd.DataFrame({
-            'id': np.arange(len(final_metrics['predictions'])),
+        predictions_file = 'results_test_predictions.csv'
+        pred_df = pd.DataFrame({
+            'id': val_df['HADM_ID'].values if 'HADM_ID' in val_df.columns else val_df.index.values,
             'predicted': final_metrics['predictions'],
             'true': final_metrics['true_labels']
         })
-        test_preds_file = 'results_test_predictions.csv'
-        test_preds_df.to_csv(test_preds_file, index=False)
-        print(f"Saved test predictions to {test_preds_file}")
-
-
+        pred_df.to_csv(predictions_file, index=False)
+        print(f"Saved test set predictions to {predictions_file}")
+        
         return {
             **final_metrics,
             'train_losses': train_losses,
