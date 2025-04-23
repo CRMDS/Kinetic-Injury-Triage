@@ -89,9 +89,9 @@ class BioClinicalBERTClassifier:
         )
 
     def check_layer_status(self):
-            for name, param in self.model.named_parameters():
-                status = 'True' if param.requires_grad else 'False'
-                print(f"{name}: requires_grad={status}")    
+        for name, param in self.model.named_parameters():
+            status = 'True' if param.requires_grad else 'False'
+            print(f"{name}: requires_grad={status}")
 
     def dataframe_to_dataloader(self, df, shuffle=True,
                                 text_column="TEXT", label_column="LABEL",
@@ -113,16 +113,16 @@ class BioClinicalBERTClassifier:
         self, dataset, num_epochs=3, test_split=0.2,
         early_stop_patience=3, shuffle_train=True,
         text_column="TEXT", label_column="LABEL",
-        debug=True, print_every=1
+        debug=True, print_every=1, primary_key=None
     ):
         scaler = GradScaler()
 
         cfg = {
-            'layers_unlocked': self.num_unfrozen_bert_layers,            
+            'layers_unlocked': self.num_unfrozen_bert_layers,
             'optimiser': self.optimizer_class.__name__,
             'seed': self.seed,
             'lr': self.optimizer_params.get('lr'),
-            'weight_decay': self.optimizer_params.get('weight_decay'), 
+            'weight_decay': self.optimizer_params.get('weight_decay'),
             'dropout': self.dropout_prob,
             'batch_size': self.batch_size,
         }
@@ -239,15 +239,28 @@ class BioClinicalBERTClassifier:
         pd.DataFrame([summary]).to_csv(summary_file, index=False, mode='a', header=header)
         print(f"Appended summary to {summary_file}")
 
-        predictions_file = 'results_test_predictions.csv'
-        pred_df = pd.DataFrame({
-            'id': val_df['HADM_ID'].values if 'HADM_ID' in val_df.columns else val_df.index.values,
-            'predicted': final_metrics['predictions'],
-            'true': final_metrics['true_labels']
-        })
-        pred_df.to_csv(predictions_file, index=False)
-        print(f"Saved test set predictions to {predictions_file}")
-        
+        # Save validation predictions if primary_key is specified
+        if primary_key is not None:
+            if primary_key not in val_df.columns:
+                raise ValueError(f"primary_key '{primary_key}' not found in DataFrame.")
+            print("Saving validation predictions to CSV...")
+            preds = []
+            self.model.eval()
+            for ids_batch, masks_batch, labs_batch in val_loader:
+                ids_batch, masks_batch = ids_batch.to(self.device), masks_batch.to(self.device)
+                with autocast():
+                    out = self.model(ids_batch, attention_mask=masks_batch)
+                p = torch.argmax(out.logits, dim=1)
+                preds.extend(p.cpu().numpy())
+            pred_df = pd.DataFrame({
+                'id': val_df[primary_key].tolist(),
+                'predicted': preds,
+                'true': val_df[label_column].tolist()
+            })
+            pred_file = f"{cfg_str}_val_predictions.csv"
+            pred_df.to_csv(pred_file, index=False)
+            print(f"Saved validation predictions to {pred_file}")
+
         return {
             **final_metrics,
             'train_losses': train_losses,
@@ -331,7 +344,7 @@ class BioClinicalBERTClassifier:
             dataset, num_epochs=num_epochs, test_split=0.2,
             early_stop_patience=early_stop_patience,
             text_column=text_column, label_column=label_column,
-            debug=debug, print_every=print_every
+            debug=debug, print_every=print_every, primary_key=None
         )
         self.save_model(save_model_path)
         print(f"Model saved to {save_model_path}")
