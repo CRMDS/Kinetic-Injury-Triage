@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""
+@model: Bio_ClinicalBERTClassifier.py
+@script: train 
+@author: Midhun Shyam (M.Shyam)
+"""
+
+import argparse
+import pandas as pd
+from Bio_ClinicalBERTClassifier import BioClinicalBERTClassifier
+from torch.optim import AdamW, Adam, SGD
+
+
+def main(args):
+    df = pd.read_csv(args.data_path)
+
+    optimizer_dict = {"AdamW": AdamW, "Adam": Adam, "SGD": SGD}
+    if args.optimizer_class not in optimizer_dict:
+        raise ValueError(
+            f"Invalid optimizer class: {args.optimizer_class}. "
+            f"Choose from {list(optimizer_dict.keys())}."
+        )
+    optimizer_class = optimizer_dict[args.optimizer_class]
+
+    print("-" * 27)
+    print("Configuration:")
+    print(f"  Optimizer: {args.optimizer_class}")
+    print(f"  Learning Rate: {args.lr}")
+    print(f"  Weight-Decay: {args.weight_decay}")
+    print(f"  Unfreeze Layers: {args.unfreeze_layers}")
+    print(f"  Seed: {args.seed}")
+    print(f"  Test Split: {args.test_split}")
+    print(f"  Batch Size: {args.batch_size}")
+    print(f"  Dropout Probability: {args.dropout_prob}")
+    print("-" * 27)
+
+    classifier = BioClinicalBERTClassifier(
+        model_name=args.model_name,
+        num_labels=args.num_labels,
+        optimizer_class=optimizer_class,
+        optimizer_params={"lr": args.lr, "weight_decay": args.weight_decay},
+        verbose=args.verbose,
+        seed=args.seed,
+        batch_size=args.batch_size,
+        dropout_prob=args.dropout_prob
+    )
+
+    if args.unfreeze_layers > 0:
+        classifier.unfreeze_last_layers(args.unfreeze_layers)
+
+    if args.model_weight_path:
+        classifier.load_model(args.model_weight_path)
+
+    results = classifier._run_train_epoch(
+        df,
+        num_epochs=args.num_epochs,
+        test_split=args.test_split,
+        early_stop_patience=args.early_stop_patience,
+        shuffle_train=True,
+        text_column=args.text_column,
+        label_column=args.label_column,
+        debug=args.debug,
+        print_every=args.print_every
+    )
+
+
+    classifier.save_model(args.save_model_path)
+    print(f"Fine-tuned model saved to {args.save_model_path}", flush=True)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Train BioClinicalBERT")
+    parser.add_argument("--data_path", type=str, required=True)
+    parser.add_argument("--model_name", type=str,
+                        default="emilyalsentzer/Bio_ClinicalBERT")
+    parser.add_argument("--num_labels", type=int, default=2)
+    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument("--weight_decay", type=float, default=0.1)
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--seed", type=int, default=8)
+    parser.add_argument("--num_epochs", type=int, default=100)
+    parser.add_argument("--test_split", type=float, default=0.2)
+    parser.add_argument("--text_column", type=str, default="TEXT")
+    parser.add_argument("--label_column", type=str, default="LABEL")
+    parser.add_argument("--model_weight_path", type=str, default=None)
+    parser.add_argument("--save_model_path", type=str, required=True)
+    parser.add_argument("--optimizer_class", type=str, default="AdamW")
+    parser.add_argument("--unfreeze_layers", type=int, default=0)
+    parser.add_argument("--verbose", action="store_true", default=True)
+    parser.add_argument("--debug", action="store_true", default=True)
+    parser.add_argument("--print_every", type=int, default=10)
+    parser.add_argument("--early_stop_patience", type=int, default=10)
+    parser.add_argument("--dropout_prob", type=float, default=None)
+    args = parser.parse_args()
+
+    main(args)
+
