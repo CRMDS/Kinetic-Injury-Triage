@@ -113,3 +113,28 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
+
+# To run this script; use the below on terminal:
+# python3 train.py \
+#   --data_path path/to/your/data.csv \
+#   --model_name emilyalsentzer/Bio_ClinicalBERT \
+#   --num_labels 2 \
+#   --lr 1e-5 \
+#   --weight_decay 0.1 \
+#   --batch_size 64 \
+#   --seed 8 \
+#   --num_epochs 100 \
+#   --test_split 0.2 \
+#   --text_column TEXT \
+#   --label_column LABEL \
+#   --model_weight_path path/to/existing_weights.pt \
+#   --save_model_path path/to/fine_tuned_model.pt \
+#   --optimizer_class AdamW \
+#   --unfreeze_layers 0 \
+#   --primary_key your_primary_key_column \
+#   --verbose \
+#   --debug \
+#   --print_every 10 \
+#   --early_stop_patience 10 \
+#   --dropout_prob 0.1
+
