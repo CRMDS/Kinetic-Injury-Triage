@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 26 23:54:06 2025
-@model: Bio_ClinicalBERTClassifier 
+@model: Bio_ClinicalBERTClassifier
 author: Midhun Shyam (M.Shyam)
 """
 
@@ -241,25 +241,36 @@ class BioClinicalBERTClassifier:
 
         # Save validation predictions if primary_key is specified
         if primary_key is not None:
-            if primary_key not in val_df.columns:
-                raise ValueError(f"primary_key '{primary_key}' not found in DataFrame.")
-            print("Saving validation predictions to CSV...")
-            preds = []
+            # check the key exists in both splits
+            for split_df in (train_df, val_df):
+                if primary_key not in split_df.columns:
+                    raise ValueError(f"primary_key '{primary_key}' not found in DataFrame.")
+
+            all_preds = []
             self.model.eval()
-            for ids_batch, masks_batch, labs_batch in val_loader:
-                ids_batch, masks_batch = ids_batch.to(self.device), masks_batch.to(self.device)
-                with autocast():
-                    out = self.model(ids_batch, attention_mask=masks_batch)
-                p = torch.argmax(out.logits, dim=1)
-                preds.extend(p.cpu().numpy())
-            pred_df = pd.DataFrame({
-                'id': val_df[primary_key].tolist(),
-                'predicted': preds,
-                'true': val_df[label_column].tolist()
-            })
-            pred_file = f"{cfg_str}_val_predictions.csv"
-            pred_df.to_csv(pred_file, index=False)
-            print(f"Saved validation predictions to {pred_file}")
+            
+            def collect_preds(df, loader, factor_name):
+                preds = []
+                with torch.no_grad():
+                    for batch in loader:
+                        ids, masks = batch[0].to(self.device), batch[1].to(self.device)
+                        out = self.model(ids, attention_mask=masks)
+                        p = torch.argmax(out.logits, dim=1)
+                        preds.extend(p.cpu().numpy())
+                return pd.DataFrame({
+                    primary_key: df[primary_key].tolist(),
+                    'predicted': preds,
+                    'true': df[label_column].tolist(),
+                    'split': factor_name
+                })
+
+            all_preds.append(collect_preds(train_df, train_loader, 'train'))
+            all_preds.append(collect_preds(val_df,   val_loader,   'validation'))
+
+            combined_df = pd.concat(all_preds, ignore_index=True)
+            pred_file = f"{cfg_str}_predictions.csv"
+            combined_df.to_csv(pred_file, index=False)
+            print(f"Saved train+validation predictions to {pred_file}")
 
         return {
             **final_metrics,
@@ -296,14 +307,21 @@ class BioClinicalBERTClassifier:
             'accuracy': accuracy_score(true, preds)
         }
 
-    def predict(self, texts, ids=None, true_labels=None, output_csv=None, max_length=512):
+    def predict(self, texts, primary_key=None, true_labels=None, output_csv=None, max_length=512):
         if isinstance(texts, str):
             texts = [texts]
         if isinstance(texts, pd.Series):
             texts = texts.tolist()
-        enc = self.tokenizer(texts, truncation=True, padding=True, max_length=max_length, return_tensors='pt')
+
+        enc = self.tokenizer(
+            texts,
+            truncation=True, padding=True,
+            max_length=max_length,
+            return_tensors='pt'
+        )
         ds = TensorDataset(enc['input_ids'], enc['attention_mask'])
         loader = DataLoader(ds, batch_size=self.batch_size)
+
         preds = []
         self.model.eval()
         for idb, maskb in tqdm(loader, disable=not self.verbose, desc='Predict'):
@@ -313,16 +331,35 @@ class BioClinicalBERTClassifier:
             p = torch.argmax(out.logits, dim=1)
             preds.extend(p.cpu().numpy())
         preds = np.array(preds)
+
         if output_csv:
+            # determine column name & values
+            if primary_key is not None and isinstance(primary_key, pd.Series):
+                key_name   = primary_key.name
+                key_values = primary_key.tolist()
+            elif primary_key is not None:
+                key_name   = 'id'
+                key_values = primary_key
+            else:
+                key_name   = 'id'
+                key_values = np.arange(len(preds))
+
+            # build DataFrame using that key_name
             df = pd.DataFrame({
-                'id': ids if ids is not None else np.arange(len(preds)),
+                key_name:   key_values,
                 'predicted': preds
             })
             if true_labels is not None:
-                df['true'] = true_labels
+                if isinstance(true_labels, pd.Series):
+                    true_vals = true_labels.tolist()
+                else:
+                    true_vals = true_labels
+                df['true'] = true_vals
+
             fname = 'results_predictions.csv'
             df.to_csv(fname, index=False)
             print(f"Saved predictions to {fname}")
+
         return preds
 
     def save_model(self, path):
