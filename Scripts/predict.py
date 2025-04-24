@@ -2,7 +2,6 @@ import argparse
 import pandas as pd
 from Bio_ClinicalBERTClassifier import BioClinicalBERTClassifier
 
-
 def main(args):
     # Load input CSV
     df = pd.read_csv(args.input_path)
