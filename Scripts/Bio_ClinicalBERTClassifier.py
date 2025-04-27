@@ -3,7 +3,7 @@
 """
 Created on Wed Feb 26 23:54:06 2025
 @model: Bio_ClinicalBERTClassifier
-author: Midhun Shyam (M.Shyam)
+author: Midhun Shyam & Dr. X. Rosalind Wang (Research Supervisor)
 """
 
 import os
