@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+"""
+@model: Bio_ClinicalBERTClassifier.py
+@script: predict
+@author: Midhun Shyam (M.Shyam)
+"""
+
 import argparse
 import pandas as pd
 from Bio_ClinicalBERTClassifier import BioClinicalBERTClassifier
