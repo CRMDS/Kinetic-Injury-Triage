@@ -9,12 +9,14 @@ import argparse
 import pandas as pd
 from Bio_ClinicalBERTClassifier import BioClinicalBERTClassifier
 from torch.optim import AdamW, Adam, SGD
+import os
 
 
 def main(args):
     # Load dataset
+    print("Loading dataset...", flush=True)
     df = pd.read_csv(args.data_path)
-
+    print(f"Loaded {len(df)} rows and {len(df.columns)} columns", flush=True)
     # Validate primary_key argument
     if args.primary_key is not None and args.primary_key not in df.columns:
         raise ValueError(
@@ -22,18 +24,19 @@ def main(args):
         )
 
     # Display configuration
-    print("-" * 27)
-    print("Configuration:")
-    print(f"  Optimizer: {args.optimizer_class}")
-    print(f"  Learning Rate: {args.lr}")
-    print(f"  Weight-Decay: {args.weight_decay}")
-    print(f"  Unfreeze Layers: {args.unfreeze_layers}")
-    print(f"  Seed: {args.seed}")
-    print(f"  Test Split: {args.test_split}")
-    print(f"  Batch Size: {args.batch_size}")
-    print(f"  Dropout Probability: {args.dropout_prob}")
-    print(f"  Primary Key: {args.primary_key}")
-    print("-" * 27)
+    print("-" * 27, flush=True)
+    print("Configuration:", flush=True)
+    print(f"  Optimizer: {args.optimizer_class}", flush=True)
+    print(f"  Learning Rate: {args.lr}", flush=True)
+    print(f"  Weight-Decay: {args.weight_decay}", flush=True)
+    print(f"  Unfreeze Layers: {args.unfreeze_layers}", flush=True)
+    print(f"  Seed: {args.seed}", flush=True)
+    print(f"  Test Split: {args.test_split}", flush=True)
+    print(f"  Batch Size: {args.batch_size}", flush=True)
+    print(f"  Dropout Probability: {args.dropout_prob}", flush=True)
+    print(f"  Primary Key: {args.primary_key}", flush=True)
+    print(f"  Output Path: {args.save_results_path}", flush=True)
+    print("-" * 27, flush=True)
 
     # Select optimizer
     optimizer_dict = {"AdamW": AdamW, "Adam": Adam, "SGD": SGD}
@@ -53,7 +56,8 @@ def main(args):
         verbose=args.verbose,
         seed=args.seed,
         batch_size=args.batch_size,
-        dropout_prob=args.dropout_prob
+        dropout_prob=args.dropout_prob,
+        output_path=args.save_results_path
     )
 
     # Unfreeze specified BERT layers
@@ -64,23 +68,29 @@ def main(args):
     if args.model_weight_path:
         classifier.load_model(args.model_weight_path)
 
+    print("Everything set up, time to train", flush=True)
     # Run training and save validation predictions
-    results = classifier._run_train_epoch(
-        df,
-        num_epochs=args.num_epochs,
-        primary_key=args.primary_key,
-        test_split=args.test_split,
-        early_stop_patience=args.early_stop_patience,
-        shuffle_train=True,
-        text_column=args.text_column,
-        label_column=args.label_column,
-        debug=args.debug,
-        print_every=args.print_every
-    )
 
-    # Save fine-tuned model
-    classifier.save_model(args.save_model_path)
-    print(f"Fine-tuned model saved to {args.save_model_path}", flush=True)
+    # Check if results_summary.csv exists in the output directory
+    if args.save_results_path and os.path.exists(os.path.join(args.save_results_path, 'results_summary.csv')):
+        print(f"Found existing results_summary.csv in output directory: {args.save_results_path}")
+    else:
+        results = classifier._run_train_epoch(
+            df,
+            num_epochs=args.num_epochs,
+            primary_key=args.primary_key,
+            test_split=args.test_split,
+            early_stop_patience=args.early_stop_patience,
+            shuffle_train=True,
+            text_column=args.text_column,
+            label_column=args.label_column,
+            debug=args.debug,
+            print_every=args.print_every
+        )
+
+        # Save fine-tuned model
+        classifier.save_model(args.save_model_path)
+        print(f"Fine-tuned model saved to {args.save_model_path}", flush=True)
 
 
 if __name__ == "__main__":
@@ -110,6 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--print_every", type=int, default=10)
     parser.add_argument("--early_stop_patience", type=int, default=10)
     parser.add_argument("--dropout_prob", type=float, default=None)
+    parser.add_argument("--save_results_path", type=str, default=None)
     args = parser.parse_args()
 
     main(args)
