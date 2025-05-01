@@ -30,7 +30,8 @@ class BioClinicalBERTClassifier:
         verbose=True,
         seed=8,
         batch_size=16,
-        dropout_prob=None
+        dropout_prob=None,
+        output_path=None,
     ):
         self.model_name = model_name
         self.num_labels = num_labels
@@ -38,6 +39,7 @@ class BioClinicalBERTClassifier:
         self.seed = seed
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
+        self.output_path = output_path
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=True)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
@@ -58,6 +60,11 @@ class BioClinicalBERTClassifier:
         self.num_unfrozen_bert_layers = self.count_unfrozen_bert_layers()
 
         self._initial_state_dict = self.model.state_dict().copy()
+
+        if self.output_path is not None and not os.path.exists(self.output_path):
+            os.makedirs(self.output_path, exist_ok=True)
+            if self.verbose:
+                print(f"Created output directory: {self.output_path}", flush=True)
 
     def configure_optimizer(self):
         self.optimizer = self.optimizer_class(
@@ -91,7 +98,7 @@ class BioClinicalBERTClassifier:
     def check_layer_status(self):
         for name, param in self.model.named_parameters():
             status = 'True' if param.requires_grad else 'False'
-            print(f"{name}: requires_grad={status}")
+            print(f"{name}: requires_grad={status}", flush=True)
 
     def dataframe_to_dataloader(self, df, shuffle=True,
                                 text_column="TEXT", label_column="LABEL",
@@ -133,7 +140,7 @@ class BioClinicalBERTClassifier:
             stratify=dataset[label_column]
         )
         if debug:
-            print(f"Train: {train_df.shape}, Val: {val_df.shape}")
+            print(f"Train: {train_df.shape}, Val: {val_df.shape}", flush=True)
 
         train_loader = self.dataframe_to_dataloader(
             train_df, shuffle=shuffle_train,
@@ -157,7 +164,11 @@ class BioClinicalBERTClassifier:
         )
         final_metrics = {}
 
+        epoch_times = []
+
+
         for epoch in range(1, num_epochs + 1):
+            epoch_start_time = time.time()
             epochs.append(epoch)
             self.model.train()
             t0 = time.time()
@@ -197,29 +208,35 @@ class BioClinicalBERTClassifier:
 
             if debug and epoch % print_every == 0:
                 print(f"Epoch {epoch} | train_loss={avg_train:.4f}, train_acc={train_accs[-1]:.4f} | "
-                      f"val_loss={val_losses[-1]:.4f}, val_acc={val_accs[-1]:.4f}")
+                      f"val_loss={val_losses[-1]:.4f}, val_acc={val_accs[-1]:.4f}", flush=True)
+
+            epoch_end_time = time.time()
+            epoch_duration = epoch_end_time - epoch_start_time
+            epoch_times.append(epoch_duration)
+
 
             if no_improve >= early_stop_patience:
                 early_stop_triggered = True
                 if debug:
-                    print(f"Early stopping at epoch {epoch}")
+                    print(f"Early stopping at epoch {epoch}", flush=True)
                 break
 
         if best_weights is not None:
             self.model.load_state_dict(best_weights)
             if debug:
-                print(f"Best val loss: {best_val:.4f}")
+                print(f"Best val loss: {best_val:.4f}", flush=True)
 
         metrics_df = pd.DataFrame({
             'epoch': epochs,
             'train_loss': train_losses,
             'train_accuracy': train_accs,
             'val_loss': val_losses,
-            'val_accuracy': val_accs
+            'val_accuracy': val_accs,
+            'time': epoch_times
         })
-        metrics_file = f"{cfg_str}.csv"
+        metrics_file = f"{self.output_path}/{cfg_str}.csv"
         metrics_df.to_csv(metrics_file, index=False)
-        print(f"Saved per-epoch metrics to {metrics_file}")
+        print(f"Saved per-epoch metrics to {metrics_file}", flush=True)
 
         cm = confusion_matrix(final_metrics['true_labels'], final_metrics['predictions'])
         tn, fp, fn, tp = cm.ravel()
@@ -234,10 +251,10 @@ class BioClinicalBERTClassifier:
             'accuracy': final_metrics['accuracy'],
             'tn': int(tn), 'fp': int(fp), 'fn': int(fn), 'tp': int(tp)
         }
-        summary_file = 'results_summary.csv'
+        summary_file = f"{self.output_path}/results_summary.csv"
         header = not os.path.exists(summary_file)
         pd.DataFrame([summary]).to_csv(summary_file, index=False, mode='a', header=header)
-        print(f"Appended summary to {summary_file}")
+        print(f"Appended summary to {summary_file}", flush=True)
 
         # Save validation predictions if primary_key is specified
         if primary_key is not None:
@@ -268,9 +285,9 @@ class BioClinicalBERTClassifier:
             all_preds.append(collect_preds(val_df,   val_loader,   'validation'))
 
             combined_df = pd.concat(all_preds, ignore_index=True)
-            pred_file = f"{cfg_str}_predictions.csv"
+            pred_file = f"{self.output_path}/{cfg_str}_predictions.csv"
             combined_df.to_csv(pred_file, index=False)
-            print(f"Saved train+validation predictions to {pred_file}")
+            print(f"Saved train+validation predictions to {pred_file}", flush=True)
 
         return {
             **final_metrics,
@@ -356,9 +373,9 @@ class BioClinicalBERTClassifier:
                     true_vals = true_labels
                 df['true'] = true_vals
 
-            fname = 'results_predictions.csv'
+            fname = f"{self.output_path}results_predictions.csv"
             df.to_csv(fname, index=False)
-            print(f"Saved predictions to {fname}")
+            print(f"Saved predictions to {fname}", flush=True)
 
         return preds
 
@@ -371,7 +388,7 @@ class BioClinicalBERTClassifier:
         self.model.to(self.device)
         self.unfreeze_classifier_layer()
         self.num_unfrozen_bert_layers = self.count_unfrozen_bert_layers()
-        print('Loaded model')
+        print('Loaded model', flush=True)
 
     def fine_tune(self, model_wt_path, dataset, text_column, label_column,
                   save_model_path, num_epochs=100, debug=True,
@@ -384,5 +401,5 @@ class BioClinicalBERTClassifier:
             debug=debug, print_every=print_every, primary_key=None
         )
         self.save_model(save_model_path)
-        print(f"Model saved to {save_model_path}")
+        print(f"Model saved to {save_model_path}", flush=True)
         return res
