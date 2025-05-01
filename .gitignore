@@ -1,5 +1,6 @@
 Data/
 Outputs/
+Slurm_Logs/
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
