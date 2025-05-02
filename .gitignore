@@ -2,6 +2,13 @@ Data/
 Outputs/
 Slurm_Logs/
 
+# Jupyter Notebook
+.ipynb_checkpoints
+Results/.ipynb_checkpoints
+
+### I don't think anything below is relevant to this project, but I will leave it here for now ###
+
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -79,9 +86,6 @@ docs/_build/
 # PyBuilder
 .pybuilder/
 target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
 
 # IPython
 profile_default/
