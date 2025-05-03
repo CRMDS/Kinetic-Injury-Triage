@@ -3,7 +3,8 @@
 """
 Created on Wed Feb 26 23:54:06 2025
 @model: Bio_ClinicalBERTClassifier
-authors: Midhun Shyam, Dr. X. Rosalind Wang (Research Supervisor), Dr. Jim Basilakis (Research Co-supervisor) & Dr Kieran Luken
+author: Midhun Shyam
+editor: Dr Kieran Luken
 """
 
 import os
@@ -390,7 +391,7 @@ class BioClinicalBERTClassifier:
         self.num_unfrozen_bert_layers = self.count_unfrozen_bert_layers()
         print('Loaded model', flush=True)
 
-    def fine_tune(self, model_wt_path, dataset, text_column, label_column,
+    def fine_tune(self, model_wt_path, dataset, primary_key=None, text_column, label_column,
                   save_model_path, num_epochs=100, debug=True,
                   print_every=10, early_stop_patience=10):
         self.load_model(model_wt_path)
@@ -398,7 +399,7 @@ class BioClinicalBERTClassifier:
             dataset, num_epochs=num_epochs, test_split=0.2,
             early_stop_patience=early_stop_patience,
             text_column=text_column, label_column=label_column,
-            debug=debug, print_every=print_every, primary_key=None
+            debug=debug, print_every=print_every, primary_key=primary_key
         )
         self.save_model(save_model_path)
         print(f"Model saved to {save_model_path}", flush=True)
