@@ -14,7 +14,7 @@ seeds = random.sample(range(1, 100), 10)  # 10 random numbers between 1 and 999
 dropout = [0.15, 0.2, 0.25]
 
 # Open file for writing
-with open('Slurm/parameter_search2.csv', 'w', newline='') as csvfile:
+with open('Slurm/parameter_search2.csv', 'w', newline='\n') as csvfile:
     writer = csv.writer(csvfile)
     
     # Write header

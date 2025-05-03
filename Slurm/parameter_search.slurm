@@ -57,11 +57,11 @@ LINE_NUM=$((${SLURM_ARRAY_TASK_ID} + 2))      # +2 to skip header row and 0-inde
 PARAMS=$(sed -n "${LINE_NUM}p" ${PROJECT_DIR}/Slurm/parameter_search.csv)
 
 # Parse hyperparameters from the CSV row
-OPTIMISER=$(echo $PARAMS | cut -d, -f1)       # Column 1: optimizer type
-LEARNING_RATE=$(echo $PARAMS | cut -d, -f2)   # Column 2: learning rate
-DROPOUT=$(echo $PARAMS | cut -d, -f3)         # Column 3: dropout probability
-LAYER_UNFREEZE=$(echo $PARAMS | cut -d, -f4)  # Column 4: number of layers to unfreeze
-SEED=$(echo $PARAMS | cut -d, -f5)            # Column 5: random seed
+OPTIMISER=$(echo $PARAMS | cut -d, -f1 | tr -d '\r')       # Column 1: optimizer type
+LEARNING_RATE=$(echo $PARAMS | cut -d, -f2 | tr -d '\r')   # Column 2: learning rate
+DROPOUT=$(echo $PARAMS | cut -d, -f3 | tr -d '\r')         # Column 3: dropout probability
+LAYER_UNFREEZE=$(echo $PARAMS | cut -d, -f4 | tr -d '\r')  # Column 4: number of layers to unfreeze
+SEED=$(echo $PARAMS | cut -d, -f5 | tr -d '\r')            # Column 5: random seed
 
 # Print parameters for this run
 echo "Running with parameters:"
