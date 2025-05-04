@@ -51,6 +51,9 @@ class BioClinicalBERTClassifier:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
+        self._now = lambda: (torch.cuda.synchronize()                    \
+                             if self.device.type == "cuda" else None) or \
+                             time.perf_counter()
 
         self.optimizer_class = optimizer_class
         self.optimizer_params = optimizer_params
@@ -62,7 +65,11 @@ class BioClinicalBERTClassifier:
 
         self._initial_state_dict = self.model.state_dict().copy()
 
-        if self.output_path is not None and not os.path.exists(self.output_path):
+        if output_path is None:
+            output_path = os.getcwd()
+        self.output_path = output_path
+
+        if not os.path.exists(self.output_path):
             os.makedirs(self.output_path, exist_ok=True)
             if self.verbose:
                 print(f"Created output directory: {self.output_path}", flush=True)
@@ -166,16 +173,22 @@ class BioClinicalBERTClassifier:
         final_metrics = {}
 
         epoch_times = []
-
+        train_times_epoch, val_times_epoch = [], []
 
         for epoch in range(1, num_epochs + 1):
-            epoch_start_time = time.time()
+            epoch_start_time = self._now()
             epochs.append(epoch)
             self.model.train()
-            t0 = time.time()
+
+
+            t0 = self._now()
             loss_sum = 0.0
             for ids, masks, labs in train_loader:
-                ids, masks, labs = ids.to(self.device), masks.to(self.device), labs.to(self.device)
+                ids, masks, labs = (
+                    ids.to(self.device),
+                    masks.to(self.device),
+                    labs.to(self.device)
+                )
                 self.optimizer.zero_grad()
                 with autocast():
                     out = self.model(ids, attention_mask=masks, labels=labs)
@@ -184,21 +197,30 @@ class BioClinicalBERTClassifier:
                 scaler.step(self.optimizer)
                 scaler.update()
                 loss_sum += loss.item()
-            t1 = time.time()
-            total_train_time += t1 - t0
+
             avg_train = loss_sum / len(train_loader)
             train_losses.append(avg_train)
             _, tr_metric = self.evaluate_loss(train_loader, use_amp=False)
             train_accs.append(tr_metric['accuracy'])
+            t1 = self._now()
+            train_time = t1 - t0
+            total_train_time += train_time
+            train_times_epoch.append(train_time)
 
-            v0 = time.time()
+
+
+            v0 = self._now()
             val_loss, val_metric = self.evaluate_loss(val_loader, use_amp=True)
-            v1 = time.time()
-            total_val_time += v1 - v0
+            v1 = self._now()
+            val_time = v1 - v0
+            total_val_time += val_time
+            val_times_epoch.append(val_time)
+
             val_losses.append(val_loss)
             val_accs.append(val_metric['accuracy'])
             final_metrics = val_metric
             scheduler.step(val_loss)
+
 
             if val_loss < best_val:
                 best_val = val_loss
@@ -208,13 +230,19 @@ class BioClinicalBERTClassifier:
                 no_improve += 1
 
             if debug and epoch % print_every == 0:
-                print(f"Epoch {epoch} | train_loss={avg_train:.4f}, train_acc={train_accs[-1]:.4f} | "
-                      f"val_loss={val_losses[-1]:.4f}, val_acc={val_accs[-1]:.4f}", flush=True)
+                print(
+                    f"Epoch {epoch} | "
+                    f"train_loss={avg_train:.4f}, "
+                    f"train_acc={train_accs[-1]:.4f}, "
+                    f"train_time={train_time:.2f}s | "
+                    f"val_loss={val_losses[-1]:.4f}, "
+                    f"val_acc={val_accs[-1]:.4f}, "
+                    f"val_time={val_time:.2f}s",
+                    flush=True
+                )
 
-            epoch_end_time = time.time()
-            epoch_duration = epoch_end_time - epoch_start_time
-            epoch_times.append(epoch_duration)
-
+            epoch_end_time = self._now()
+            epoch_times.append(epoch_end_time - epoch_start_time)
 
             if no_improve >= early_stop_patience:
                 early_stop_triggered = True
@@ -233,7 +261,9 @@ class BioClinicalBERTClassifier:
             'train_accuracy': train_accs,
             'val_loss': val_losses,
             'val_accuracy': val_accs,
-            'time': epoch_times
+            'train_time_s': train_times_epoch,
+            'val_time_s':   val_times_epoch,
+            'epoch_time_s': epoch_times
         })
         metrics_file = f"{self.output_path}/{cfg_str}.csv"
         metrics_df.to_csv(metrics_file, index=False)
@@ -248,7 +278,7 @@ class BioClinicalBERTClassifier:
             'early_stop_triggered': early_stop_triggered,
             'best_val_loss': best_val,
             'total_train_time_s': round(total_train_time, 2),
-            'total_val_time_s': round(total_val_time, 2),
+            'total_val_time_s':   round(total_val_time, 2),
             'accuracy': final_metrics['accuracy'],
             'tn': int(tn), 'fp': int(fp), 'fn': int(fn), 'tp': int(tp)
         }
@@ -257,16 +287,14 @@ class BioClinicalBERTClassifier:
         pd.DataFrame([summary]).to_csv(summary_file, index=False, mode='a', header=header)
         print(f"Appended summary to {summary_file}", flush=True)
 
-        # Save validation predictions if primary_key is specified
         if primary_key is not None:
-            # check the key exists in both splits
             for split_df in (train_df, val_df):
                 if primary_key not in split_df.columns:
                     raise ValueError(f"primary_key '{primary_key}' not found in DataFrame.")
 
             all_preds = []
             self.model.eval()
-            
+
             def collect_preds(df, loader, factor_name):
                 preds = []
                 with torch.no_grad():
@@ -300,6 +328,7 @@ class BioClinicalBERTClassifier:
             'total_train_time': total_train_time,
             'total_val_time': total_val_time
         }
+
 
     def evaluate_loss(self, loader, use_amp=True):
         self.model.eval()
@@ -341,6 +370,7 @@ class BioClinicalBERTClassifier:
         loader = DataLoader(ds, batch_size=self.batch_size)
 
         preds = []
+        pred_start = self._now()
         self.model.eval()
         for idb, maskb in tqdm(loader, disable=not self.verbose, desc='Predict'):
             idb, maskb = idb.to(self.device), maskb.to(self.device)
@@ -351,7 +381,6 @@ class BioClinicalBERTClassifier:
         preds = np.array(preds)
 
         if output_csv:
-            # determine column name & values
             if primary_key is not None and isinstance(primary_key, pd.Series):
                 key_name   = primary_key.name
                 key_values = primary_key.tolist()
@@ -362,7 +391,6 @@ class BioClinicalBERTClassifier:
                 key_name   = 'id'
                 key_values = np.arange(len(preds))
 
-            # build DataFrame using that key_name
             df = pd.DataFrame({
                 key_name:   key_values,
                 'predicted': preds
@@ -374,9 +402,32 @@ class BioClinicalBERTClassifier:
                     true_vals = true_labels
                 df['true'] = true_vals
 
-            fname = f"{self.output_path}results_predictions.csv"
+            fname = os.path.join(self.output_path, "results_predictions.csv")
             df.to_csv(fname, index=False)
             print(f"Saved predictions to {fname}", flush=True)
+
+        pred_end = self._now()
+        total_pred_time = pred_end - pred_start
+        
+        if self.verbose:
+            print(
+                f"Prediction time: {total_pred_time:.2f}s "
+                f"({total_pred_time/len(preds):.4f}s per sample)",
+                flush=True
+            )
+
+
+        time_df = pd.DataFrame([{
+            'num_samples': len(preds),
+            'total_time_s': round(total_pred_time, 4),
+            'avg_time_per_sample_s': round(total_pred_time / len(preds), 6)
+        }])
+        time_fname = os.path.join(self.output_path, "results_prediction_time.csv")
+        header = not os.path.exists(time_fname)
+        time_df.to_csv(time_fname, mode='a', index=False, header=header)
+        if self.verbose:
+            print(f"Appended prediction timing to {time_fname}", flush=True)
+
 
         return preds
 
@@ -384,23 +435,44 @@ class BioClinicalBERTClassifier:
         torch.save(self.model.state_dict(), path)
 
     def load_model(self, path):
+        if not path or not os.path.isfile(path):
+            raise FileNotFoundError(f"Model-weight file not found: {path}")
         state = torch.load(path, map_location=self.device)
         self.model.load_state_dict(state)
         self.model.to(self.device)
         self.unfreeze_classifier_layer()
         self.num_unfrozen_bert_layers = self.count_unfrozen_bert_layers()
-        print('Loaded model', flush=True)
+        if self.verbose:
+            print("Loaded model", flush=True)
 
-    def fine_tune(self, model_wt_path, dataset, primary_key=None, text_column, label_column,
-                  save_model_path, num_epochs=100, debug=True,
-                  print_every=10, early_stop_patience=10):
+    def fine_tune(
+        self,
+        model_wt_path,
+        dataset,
+        text_column,
+        label_column,
+        save_model_path,
+        num_epochs=100,
+        debug=True,
+        print_every=10,
+        early_stop_patience=10,
+        primary_key=None
+    ):
+
         self.load_model(model_wt_path)
+
         res = self._run_train_epoch(
-            dataset, num_epochs=num_epochs, test_split=0.2,
+            dataset,
+            num_epochs=num_epochs,
+            test_split=0.2,
             early_stop_patience=early_stop_patience,
-            text_column=text_column, label_column=label_column,
-            debug=debug, print_every=print_every, primary_key=primary_key
+            text_column=text_column,
+            label_column=label_column,
+            debug=debug,
+            print_every=print_every,
+            primary_key=primary_key
         )
+
         self.save_model(save_model_path)
         print(f"Model saved to {save_model_path}", flush=True)
         return res
