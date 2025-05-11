@@ -6,6 +6,20 @@ Slurm_Logs/
 .ipynb_checkpoints
 Results/.ipynb_checkpoints
 
+# Don't commit the generated plots to the git -- can generate locally
+Results/*.png
+
+# LaTeX generated files
+Results/*.aux
+Results/*.fdb_latexmk
+Results/*.fls
+Results/*.synctex.gz
+Results/*.out
+
+# R temporary files
+Results/*.Rhistory
+
+
 ### I don't think anything below is relevant to this project, but I will leave it here for now ###
 
 
