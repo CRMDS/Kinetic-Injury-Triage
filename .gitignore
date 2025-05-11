@@ -8,6 +8,8 @@ Results/.ipynb_checkpoints
 
 # Don't commit the generated plots to the git -- can generate locally
 Results/*.png
+# Don't commit the generated stat sig pairwise comparison
+Results/pairwise_comparisons.csv
 
 # LaTeX generated files
 Results/*.aux
