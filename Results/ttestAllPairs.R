@@ -12,10 +12,7 @@ library(tibble)
 datafile = "fine_tune_prediction_results.csv" # step 4 -- prediction using domain adapted models
 
 # total number of samples
-N = 10  # number of reps for each model
-# N = 488    # number of validation samples in step 1
-# N = 1000   # number of prediction samples in step 2 and 4
-# N = 200    # number of validation samples in step 3
+N = 10  # number of reps for each mode
 
 # parameters
 learning_rates = c(0.0001, 0.0005)
