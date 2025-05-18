@@ -7,14 +7,17 @@ import random
 
 # Define all possible values for each parameter
 optimisers = ["AdamW", "Adam", "SGD"]
+optimisers = ["AdamW", "Adam"] #Removing SGD for fine-tuning
 learning_rates = [0.005, 0.0001, 0.0005]
+learning_rates = [0.0001, 0.0005] #Removing 0.005 for fine-tuning
 layer_unfreeze = [0, 1, 2]
+layer_unfreeze = [1, 2] #Removing 0 for fine-tuning
 random.seed(42)  # For reproducibility
 seeds = random.sample(range(1, 100), 10)  # 10 random numbers between 1 and 999
 dropout = [0.15, 0.2, 0.25]
 
 # Open file for writing
-with open('Slurm/parameter_search2.csv', 'w', newline='\n') as csvfile:
+with open('Slurm/finetune_parameters.csv', 'w', newline='\n') as csvfile:
     writer = csv.writer(csvfile)
     
     # Write header
