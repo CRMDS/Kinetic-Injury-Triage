@@ -33,6 +33,8 @@ class BioClinicalBERTClassifier:
         batch_size=16,
         dropout_prob=None,
         output_path=None,
+        fine_tune_run=False,
+        predict_run=False,
     ):
         self.model_name = model_name
         self.num_labels = num_labels
@@ -41,6 +43,15 @@ class BioClinicalBERTClassifier:
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
         self.output_path = output_path
+        self.fine_tune_run = fine_tune_run
+        self.predict_run = predict_run
+        self.results_filename = "results_summary"
+
+        if self.fine_tune_run:
+            self.results_filename += "_fine_tune"
+        if self.predict_run:
+            self.results_filename += "_predict"
+        self.results_filename += ".csv"
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=True)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
@@ -282,7 +293,7 @@ class BioClinicalBERTClassifier:
             'accuracy': final_metrics['accuracy'],
             'tn': int(tn), 'fp': int(fp), 'fn': int(fn), 'tp': int(tp)
         }
-        summary_file = f"{self.output_path}/results_summary.csv"
+        summary_file = f"{self.output_path}/{self.results_filename}"
         header = not os.path.exists(summary_file)
         pd.DataFrame([summary]).to_csv(summary_file, index=False, mode='a', header=header)
         print(f"Appended summary to {summary_file}", flush=True)
@@ -402,7 +413,7 @@ class BioClinicalBERTClassifier:
                     true_vals = true_labels
                 df['true'] = true_vals
 
-            fname = os.path.join(self.output_path, "results_predictions.csv")
+            fname = f"{self.output_path}/{self.results_filename}"
             df.to_csv(fname, index=False)
             print(f"Saved predictions to {fname}", flush=True)
 
