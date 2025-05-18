@@ -438,4 +438,31 @@ AdamW & $111.487 \pm 32.506$ & $104.337 \pm 24.244$ & $178.830 \pm 14.122$ & $16
 	} 
 \end{figure}
 
+
+\newpage
+%-------------------------------------------------------------------------------
+% SECTION 5
+%-------------------------------------------------------------------------------
+\section{Run time on different number of CPUs}
+
+We ran the further fine-tuning step using AdamW optimiser with 0.0001 learning rate and 0.15 drop out rate on \inghamOne data with different number of CPUs.
+
+\begin{figure}[h!]
+	\begin{center}
+		\begin{subfigure}[b]{\figwidthhh}
+			\caption{} 
+			\includegraphics[width=\textwidth]{CPUNumb_finetuning_RunTimeMin.png}
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{\figwidthhh}
+			\caption{}
+			\includegraphics[width=\textwidth]{CPUNumb_finetuning_prediction_avg_elapsed_time_s.png}
+		\end{subfigure}
+	\end{center}                                                                
+	\caption{Results of testing the run time with different number of CPUs: (a) further fine-tuning time (min) using \inghamOne data; (b) prediction time (s) using \inghamTwo data.
+	}
+\end{figure}
+
+Note that for the prediction time for 16 CPUs, one run took 3 times as long as the other nine runs, hence the large error bar. Also note that for the prediction time for large number of CPUs (with the total run time under a minute), a large percentage of the time would have been spent on data I/O, importing the many packages and libraries, and initialising the model. Hence, the run time is no longer decreasing with the number of CPUs. One would assume that the run time would be lower for large number of CPUs if the size of the data is much larger. 
+
 \end{document}

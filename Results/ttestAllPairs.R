@@ -6,24 +6,24 @@ library(readr)
 library(tibble)
 
 # Data files
-# datafile = "aggregated_results.csv"  # step 1 -- fine-tuning results
-# datafile = "prediction_results.csv" # step 2 -- prediction results
-# datafile = "fine_tune_results.csv" # step 3 -- domain adaptation results
-datafile = "fine_tune_prediction_results.csv" # step 4 -- prediction using domain adapted models
+datafile = "aggregated_results.csv"  # step 1 -- fine-tuning results # nolint
+# datafile = "prediction_results.csv" # step 2 -- prediction results # nolint
+# datafile = "fine_tune_results.csv" # step 3 -- domain adaptation results # nolint
+# datafile = "fine_tune_prediction_results.csv" # step 4 -- prediction using domain adapted models # nolint
 
 # total number of samples
-N = 10  # number of reps for each mode
+N = 10  # number of reps for each mode # nolint
 
 # parameters
-learning_rates = c(0.0001, 0.0005)
-dropouts = c(0.15, 0.2, 0.25)
-unfreeze = 2
+learning_rates <- c(0.0001, 0.0005)
+dropouts <- c(0.15, 0.2, 0.25)
+unfreeze <- 2
 # metric to use
-# metric = "accuracy"
-metric = "f1_score"
-metric_std = paste0(metric, "_std")
+metric <- "accuracy"    # nolint
+# metric <- "f1_score"         # nolint
+metric_std <- paste0(metric, "_std")
 
-df <- read_csv(datafile)  
+df <- read_csv(datafile)
 
 # Filter and subset
 filtered_df <- df %>%
@@ -39,8 +39,8 @@ compare_two_rows <- function(idx) {
   sim1 <- rnorm(N, mean = row1[[metric]], sd = row1[[metric_std]])
   sim2 <- rnorm(N, mean = row2[[metric]], sd = row2[[metric_std]])
 
-  # Perform t-test 10 times and then take the mean
-  # as we don't have the actual data at this point, it's best to run multiple times
+  # Perform t-test 10 times and then take the mean, as we don't have 
+  # the actual data at this point, it's best to run multiple times
   ttest_results <- replicate(10, {
     sim1 <- rnorm(N, mean = row1[[metric]], sd = row1[[metric_std]])
     sim2 <- rnorm(N, mean = row2[[metric]], sd = row2[[metric_std]])
