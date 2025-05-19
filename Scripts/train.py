@@ -98,6 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--model_name", type=str,
                         default="emilyalsentzer/Bio_ClinicalBERT")
+    parser.add_argument("--local_model_path", type=str, default=None)
     parser.add_argument("--num_labels", type=int, default=2)
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--weight_decay", type=float, default=0.1)
@@ -148,4 +149,8 @@ if __name__ == "__main__":
 #   --print_every 10 \
 #   --early_stop_patience 10 \
 #   --dropout_prob 0.1
+#
+# Note: if can't download the model from HuggingFace, you can download it manually 
+# and set the local_model_path to the directory where the model is saved. 
+# Use the --local_model_path argument to specify the local path.
 

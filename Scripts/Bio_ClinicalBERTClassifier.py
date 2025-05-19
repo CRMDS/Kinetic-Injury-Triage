@@ -4,7 +4,7 @@
 Created on Wed Feb 26 23:54:06 2025
 @model: Bio_ClinicalBERTClassifier
 author: Midhun Shyam
-editor: Dr Kieran Luken
+modified by: Kieran Luken; Rosalind Wang
 """
 
 import os
@@ -25,6 +25,7 @@ class BioClinicalBERTClassifier:
     def __init__(
         self,
         model_name="emilyalsentzer/Bio_ClinicalBERT",
+        local_model_path=None,  # Optional: path to local model
         num_labels=2,
         optimizer_class=AdamW,
         optimizer_params={'lr': 1e-5, 'weight_decay': 0.1},
@@ -53,8 +54,23 @@ class BioClinicalBERTClassifier:
             self.results_filename += "_predict"
         self.results_filename += ".csv"
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=True)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
+        # In case the model can't be downloaded from HuggingFace
+        try: 
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=True)
+            self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
+        except OSError:
+            print(f"Could not fetch {model_name}. Attempting to load from local path: {local_model_path}", flush=True)
+            if os.path.isdir(local_model_path):
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    local_model_path,
+                    local_files_only=True
+                    clean_up_tokenization_spaces=True)
+                self.model = AutoModelForSequenceClassification.from_pretrained(
+                    local_model_path,
+                    local_files_only=True
+                    num_labels=num_labels)
+            else:
+                raise FileNotFoundError(f"Model not found at {local_model_path} or {model_name}")
 
         if dropout_prob is not None:
             self.model.config.hidden_dropout_prob = dropout_prob
