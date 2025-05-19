@@ -63,11 +63,11 @@ class BioClinicalBERTClassifier:
             if os.path.isdir(local_model_path):
                 self.tokenizer = AutoTokenizer.from_pretrained(
                     local_model_path,
-                    local_files_only=True
+                    local_files_only=True,
                     clean_up_tokenization_spaces=True)
                 self.model = AutoModelForSequenceClassification.from_pretrained(
                     local_model_path,
-                    local_files_only=True
+                    local_files_only=True,
                     num_labels=num_labels)
             else:
                 raise FileNotFoundError(f"Model not found at {local_model_path} or {model_name}")
