@@ -5,38 +5,57 @@ Created on Wed Feb 26 23:54:06 2025
 @model: Bio_ClinicalBERTClassifier
 author: Midhun Shyam
 modified by: Kieran Luken; Rosalind Wang
+
+This script defines a classifier class based on the Bio_ClinicalBERT model
+for sequence classification tasks in clinical NLP applications.
 """
 
-import os
-import time
+# Import standard libraries
+import os        # For filesystem operations
+import time      # For performance timing
+
+# Data handling
 import pandas as pd
+import numpy as np
+
+# PyTorch and optimization
 import torch
-from torch.optim import AdamW, Adam, SGD
-from torch.cuda.amp import autocast, GradScaler
+from torch.optim import AdamW, Adam, SGD              # Optimizers for model training
+from torch.cuda.amp import autocast, GradScaler       # Mixed precision training utilities
+
+# Scikit-learn utilities
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.model_selection import train_test_split
+
+# Hugging Face Transformers
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+# DataLoader for batching
 from torch.utils.data import DataLoader, TensorDataset
-from tqdm import tqdm
-import numpy as np
+from tqdm import tqdm  # Progress bar for iterations
 
 
 class BioClinicalBERTClassifier:
+    """
+    Wrapper class for fine-tuning and inference using the Bio_ClinicalBERT model
+    for binary or multi-label sequence classification.
+    """
     def __init__(
         self,
         model_name="emilyalsentzer/Bio_ClinicalBERT",
-        local_model_path=None,  # Optional: path to local model
-        num_labels=2,
-        optimizer_class=AdamW,
+        local_model_path=None,  # Optional fallback path for local model
+        num_labels=2,           # Number of classification labels
+        optimizer_class=AdamW,  # Default optimizer
         optimizer_params={'lr': 1e-5, 'weight_decay': 0.1},
-        verbose=True,
-        seed=8,
-        batch_size=16,
-        dropout_prob=None,
-        output_path=None,
-        fine_tune_run=False,
-        predict_run=False,
+        verbose=True,           # Whether to print status messages
+        seed=8,                 # Random seed for reproducibility
+        batch_size=16,          # Batch size for DataLoader
+        dropout_prob=None,      # Optional dropout probability override
+        output_path=None,       # Directory for saving outputs
+        fine_tune_run=False,    # Flag for fine-tuning mode
+        predict_run=False,      # Flag for prediction mode
     ):
+        # Store initialization parameters
         self.model_name = model_name
         self.num_labels = num_labels
         self.verbose = verbose
@@ -48,50 +67,68 @@ class BioClinicalBERTClassifier:
         self.predict_run = predict_run
         self.results_filename = "results_summary"
 
+        # Append suffixes to results filename depending on run mode
         if self.fine_tune_run:
             self.results_filename += "_fine_tune"
         if self.predict_run:
             self.results_filename += "_predict"
         self.results_filename += ".csv"
 
-        # In case the model can't be downloaded from HuggingFace
-        try: 
-            self.tokenizer = AutoTokenizer.from_pretrained(model_name, clean_up_tokenization_spaces=True)
-            self.model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
+        # Attempt to load tokenizer and model from Hugging Face Hub
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model_name,
+                clean_up_tokenization_spaces=True
+            )
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                model_name,
+                num_labels=num_labels
+            )
         except OSError:
+            # Fallback to local model path if internet unavailable
             print(f"Could not fetch {model_name}. Attempting to load from local path: {local_model_path}", flush=True)
             if os.path.isdir(local_model_path):
                 self.tokenizer = AutoTokenizer.from_pretrained(
                     local_model_path,
                     local_files_only=True,
-                    clean_up_tokenization_spaces=True)
+                    clean_up_tokenization_spaces=True
+                )
                 self.model = AutoModelForSequenceClassification.from_pretrained(
                     local_model_path,
                     local_files_only=True,
-                    num_labels=num_labels)
+                    num_labels=num_labels
+                )
             else:
                 raise FileNotFoundError(f"Model not found at {local_model_path} or {model_name}")
 
+        # Override dropout probabilities if specified
         if dropout_prob is not None:
             self.model.config.hidden_dropout_prob = dropout_prob
             self.model.config.attention_probs_dropout_prob = dropout_prob
 
+        # Set device (GPU if available, else CPU)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
-        self._now = lambda: (torch.cuda.synchronize()                    \
-                             if self.device.type == "cuda" else None) or \
-                             time.perf_counter()
 
+        # Helper for precise timing (synchronize CUDA if needed)
+        self._now = lambda: (
+            torch.cuda.synchronize() if self.device.type == "cuda" else None
+        ) or time.perf_counter()
+
+        # Store optimizer configuration
         self.optimizer_class = optimizer_class
         self.optimizer_params = optimizer_params
         self.configure_optimizer()
 
+        # Initialize layer freezing settings: freeze all, then unfreeze classifier
         self.freeze_model_layers()
         self.unfreeze_classifier_layer()
         self.num_unfrozen_bert_layers = self.count_unfrozen_bert_layers()
 
+        # Keep initial model weights for reference
         self._initial_state_dict = self.model.state_dict().copy()
 
+        # Prepare output directory
         if output_path is None:
             output_path = os.getcwd()
         self.output_path = output_path
@@ -102,35 +139,54 @@ class BioClinicalBERTClassifier:
                 print(f"Created output directory: {self.output_path}", flush=True)
 
     def configure_optimizer(self):
+        """
+        Set up the optimizer using parameters filtering only trainable parameters.
+        """
         self.optimizer = self.optimizer_class(
             filter(lambda p: p.requires_grad, self.model.parameters()),
             **self.optimizer_params
         )
 
     def freeze_model_layers(self, requires_grad=False):
+        """
+        Freeze or unfreeze all model parameters to control which layers are trainable.
+        """
         for param in self.model.parameters():
             param.requires_grad = requires_grad
 
     def unfreeze_classifier_layer(self, requires_grad=True):
+        """
+        Unfreeze only the final classification layer so it can be trained.
+        """
         self.model.classifier.weight.requires_grad = requires_grad
         self.model.classifier.bias.requires_grad = requires_grad
 
     def unfreeze_last_layers(self, n=1):
+        """
+        Unfreeze the last `n` layers of the BERT encoder for fine-tuning.
+        """
         total = len(self.model.bert.encoder.layer)
         if n > total:
             raise ValueError(f"Cannot unfreeze {n} layers; max is {total}.")
         for i in range(total - n, total):
             for p in self.model.bert.encoder.layer[i].parameters():
                 p.requires_grad = True
+        # Update count of trainable BERT layers
         self.num_unfrozen_bert_layers = self.count_unfrozen_bert_layers()
 
     def count_unfrozen_bert_layers(self):
+        """
+        Count how many BERT encoder layers are currently trainable.
+        """
         return sum(
             1 for layer in self.model.bert.encoder.layer
             if any(p.requires_grad for p in layer.parameters())
         )
 
     def check_layer_status(self):
+        """
+        Print out the requires_grad status for each model parameter.
+        """
         for name, param in self.model.named_parameters():
             status = 'True' if param.requires_grad else 'False'
             print(f"{name}: requires_grad={status}", flush=True)
@@ -138,6 +194,10 @@ class BioClinicalBERTClassifier:
     def dataframe_to_dataloader(self, df, shuffle=True,
                                 text_column="TEXT", label_column="LABEL",
                                 max_length=512):
+        """
+        Convert a pandas DataFrame with text and labels into a PyTorch DataLoader.
+        Tokenizes text, creates TensorDataset, and wraps in DataLoader.
+        """
         if text_column not in df or label_column not in df:
             raise ValueError(f"DataFrame needs '{text_column}' and '{label_column}' columns")
         df = df.copy()
@@ -157,8 +217,14 @@ class BioClinicalBERTClassifier:
         text_column="TEXT", label_column="LABEL",
         debug=True, print_every=1, primary_key=None
     ):
+        """
+        Core training loop over multiple epochs with early stopping and LR scheduling.
+        Splits dataset, trains, validates, and records metrics.
+        """
+        # Setup mixed-precision scaler
         scaler = GradScaler()
 
+        # Configuration summary for output filenames
         cfg = {
             'layers_unlocked': self.num_unfrozen_bert_layers,
             'optimiser': self.optimizer_class.__name__,
@@ -170,6 +236,7 @@ class BioClinicalBERTClassifier:
         }
         cfg_str = '_'.join(str(v) for v in cfg.values())
 
+        # Split into training and validation sets
         train_df, val_df = train_test_split(
             dataset, test_size=test_split, random_state=self.seed,
             stratify=dataset[label_column]
@@ -177,6 +244,7 @@ class BioClinicalBERTClassifier:
         if debug:
             print(f"Train: {train_df.shape}, Val: {val_df.shape}", flush=True)
 
+        # Create DataLoaders
         train_loader = self.dataframe_to_dataloader(
             train_df, shuffle=shuffle_train,
             text_column=text_column, label_column=label_column
@@ -186,6 +254,7 @@ class BioClinicalBERTClassifier:
             text_column=text_column, label_column=label_column
         )
 
+        # Initialise tracking lists
         epochs, train_losses, val_losses, train_accs, val_accs = [], [], [], [], []
         total_train_time = total_val_time = 0.0
         best_val = float('inf')
@@ -193,21 +262,24 @@ class BioClinicalBERTClassifier:
         no_improve = 0
         early_stop_triggered = False
 
+        # LR scheduler based on plateau of validation loss
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.1,
-            patience=3, threshold=0.001, verbose=debug
+            self.optimizer, mode='min', factor=0.1, # factor when triggered, multiply the current LR by 0.1 (reduce it to 10%) 
+            patience=3, threshold=0.001, verbose=debug # threshold checks for minimum change in the monitored loss to be considered an improvement
         )
         final_metrics = {}
 
+        # Track epoch times
         epoch_times = []
         train_times_epoch, val_times_epoch = [], []
 
+        # Loop over epochs
         for epoch in range(1, num_epochs + 1):
             epoch_start_time = self._now()
             epochs.append(epoch)
             self.model.train()
 
-
+            # ---------- Training Phase ----------
             t0 = self._now()
             loss_sum = 0.0
             for ids, masks, labs in train_loader:
@@ -234,8 +306,7 @@ class BioClinicalBERTClassifier:
             total_train_time += train_time
             train_times_epoch.append(train_time)
 
-
-
+            # ---------- Validation Phase ----------
             v0 = self._now()
             val_loss, val_metric = self.evaluate_loss(val_loader, use_amp=True)
             v1 = self._now()
@@ -248,7 +319,7 @@ class BioClinicalBERTClassifier:
             final_metrics = val_metric
             scheduler.step(val_loss)
 
-
+            # Check for improvement
             if val_loss < best_val:
                 best_val = val_loss
                 best_weights = self.model.state_dict().copy()
@@ -256,6 +327,7 @@ class BioClinicalBERTClassifier:
             else:
                 no_improve += 1
 
+            # Print debug info
             if debug and epoch % print_every == 0:
                 print(
                     f"Epoch {epoch} | "
@@ -271,17 +343,20 @@ class BioClinicalBERTClassifier:
             epoch_end_time = self._now()
             epoch_times.append(epoch_end_time - epoch_start_time)
 
+            # Early stopping check
             if no_improve >= early_stop_patience:
                 early_stop_triggered = True
                 if debug:
                     print(f"Early stopping at epoch {epoch}", flush=True)
                 break
 
+        # Load the best model weights after training
         if best_weights is not None:
             self.model.load_state_dict(best_weights)
             if debug:
                 print(f"Best val loss: {best_val:.4f}", flush=True)
 
+        # Save per-epoch metrics to CSV
         metrics_df = pd.DataFrame({
             'epoch': epochs,
             'train_loss': train_losses,
@@ -296,9 +371,11 @@ class BioClinicalBERTClassifier:
         metrics_df.to_csv(metrics_file, index=False)
         print(f"Saved per-epoch metrics to {metrics_file}", flush=True)
 
+        # Compute confusion matrix from final predictions
         cm = confusion_matrix(final_metrics['true_labels'], final_metrics['predictions'])
         tn, fp, fn, tp = cm.ravel()
 
+        # Prepare summary of training run
         summary = {
             **cfg,
             'epochs_ran': len(epochs),
@@ -314,6 +391,7 @@ class BioClinicalBERTClassifier:
         pd.DataFrame([summary]).to_csv(summary_file, index=False, mode='a', header=header)
         print(f"Appended summary to {summary_file}", flush=True)
 
+        # If primary_key provided, save detailed predictions
         if primary_key is not None:
             for split_df in (train_df, val_df):
                 if primary_key not in split_df.columns:
@@ -345,6 +423,7 @@ class BioClinicalBERTClassifier:
             combined_df.to_csv(pred_file, index=False)
             print(f"Saved train+validation predictions to {pred_file}", flush=True)
 
+        # Return metrics and tracking lists for external use
         return {
             **final_metrics,
             'train_losses': train_losses,
@@ -356,8 +435,10 @@ class BioClinicalBERTClassifier:
             'total_val_time': total_val_time
         }
 
-
     def evaluate_loss(self, loader, use_amp=True):
+        """
+        Compute average loss and accuracy over a given DataLoader.
+        """
         self.model.eval()
         total = 0.0
         true, preds = [], []
@@ -382,6 +463,9 @@ class BioClinicalBERTClassifier:
         }
 
     def predict(self, texts, primary_key=None, true_labels=None, output_csv=None, max_length=512):
+        """
+        Run inference on a list of texts, optionally saving predictions to CSV.
+        """
         if isinstance(texts, str):
             texts = [texts]
         if isinstance(texts, pd.Series):
@@ -407,6 +491,7 @@ class BioClinicalBERTClassifier:
             preds.extend(p.cpu().numpy())
         preds = np.array(preds)
 
+        # Save predictions and timing if requested
         if output_csv:
             if primary_key is not None and isinstance(primary_key, pd.Series):
                 key_name   = primary_key.name
@@ -435,7 +520,7 @@ class BioClinicalBERTClassifier:
 
         pred_end = self._now()
         total_pred_time = pred_end - pred_start
-        
+
         if self.verbose:
             print(
                 f"Prediction time: {total_pred_time:.2f}s "
@@ -443,8 +528,8 @@ class BioClinicalBERTClassifier:
                 flush=True
             )
 
-
-        time_df = pd.DataFrame([{
+        # Log prediction timing to CSV
+        time_df = pd.DataFrame([{  
             'num_samples': len(preds),
             'total_time_s': round(total_pred_time, 4),
             'avg_time_per_sample_s': round(total_pred_time / len(preds), 6)
@@ -455,13 +540,18 @@ class BioClinicalBERTClassifier:
         if self.verbose:
             print(f"Appended prediction timing to {time_fname}", flush=True)
 
-
         return preds
 
     def save_model(self, path):
+        """
+        Save current model state dict to specified path.
+        """
         torch.save(self.model.state_dict(), path)
 
     def load_model(self, path):
+        """
+        Load model state dict from file and prepare for further fine-tuning or inference.
+        """
         if not path or not os.path.isfile(path):
             raise FileNotFoundError(f"Model-weight file not found: {path}")
         state = torch.load(path, map_location=self.device)
@@ -485,9 +575,13 @@ class BioClinicalBERTClassifier:
         early_stop_patience=10,
         primary_key=None
     ):
-
+        """
+        Load pretrained weights, run full training loop for further fine-tuning, and save fine-tuned model.
+        """
+        # Load initial model weights
         self.load_model(model_wt_path)
 
+        # Execute training epochs
         res = self._run_train_epoch(
             dataset,
             num_epochs=num_epochs,
@@ -500,6 +594,7 @@ class BioClinicalBERTClassifier:
             primary_key=primary_key
         )
 
+        # Save final model weights
         self.save_model(save_model_path)
         print(f"Model saved to {save_model_path}", flush=True)
         return res
