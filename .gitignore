@@ -1,6 +1,8 @@
 Data/
 Outputs/
 Slurm_Logs/
+PBS_Logs/
+PBS/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -20,6 +22,16 @@ Results/*.out
 
 # R temporary files
 Results/*.Rhistory
+
+# Nextflow related
+# Nextflow is used to "array" jobs on NCI
+Nextflow/*.tsv
+Nextflow/.nextflow/
+Nextflow/.nextflow.log*
+Nextflow/*.sh.*
+Nextflow/work/
+Nextflow/nextflow.config
+
 
 
 ### I don't think anything below is relevant to this project, but I will leave it here for now ###
