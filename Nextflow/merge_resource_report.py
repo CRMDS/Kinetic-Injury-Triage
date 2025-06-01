@@ -4,7 +4,7 @@ import pandas as pd
 
 # Input files
 file1_path = "gadi-nf-core-joblogs.tsv"  # Contains Log_path
-file2_path = "nf-tasks.tsv"  # Base file (file_path + task_info)
+file2_path = "gadi-nf-tasks.tsv"  # Base file (file_path + task_info)
 param_file_path = "parameter_search.csv"  # parameters used in the pipeline
 output_path = "merged-jobreport.tsv"
 
