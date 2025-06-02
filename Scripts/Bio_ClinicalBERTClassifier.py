@@ -13,6 +13,7 @@ for sequence classification tasks in clinical NLP applications.
 # Import standard libraries
 import os        # For filesystem operations
 import time      # For performance timing
+import sys
 
 # Data handling
 import pandas as pd
@@ -483,7 +484,7 @@ class BioClinicalBERTClassifier:
         preds = []
         pred_start = self._now()
         self.model.eval()
-        for idb, maskb in tqdm(loader, disable=not self.verbose, desc='Predict'):
+        for idb, maskb in tqdm(loader, disable=not self.verbose or not sys.stdout.isatty(), desc='Predict'):
             idb, maskb = idb.to(self.device), maskb.to(self.device)
             with autocast():
                 out = self.model(idb, attention_mask=maskb)
