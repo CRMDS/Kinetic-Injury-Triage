@@ -11,7 +11,18 @@ Note: I had to update a few things in this script as it seems to not working wit
 
 ## Nextflow related
 
-`nextflow.config` is the configuration file that contains information about gadi, as this file contains project specific information, it is not pushed into the repo. See [NCI nextflow documentation](https://opus.nci.org.au/spaces/DAE/pages/138903678/Nextflow) for what typically goes into the configuration file. 
+`nextflow.config` is the configuration file that contains information about gadi, as this file contains project specific information, it is not pushed into the repo. See [NCI nextflow documentation](https://opus.nci.org.au/spaces/DAE/pages/138903678/Nextflow) for what typically goes into the configuration file. `trace` is enabled in the config file with the following information: 
+
+```
+trace {
+    enabled = true
+    file = "nf-trace.txt"
+    fields = 'task_id,process,name,status,exit,duration,tag,realtime,%cpu,%mem,rss,peak_rss'
+}
+```
+
+This allows us to match the jobs with the parameters for job resource reports. 
+
 
 `main.nf` is the main nextflow script that contains information about the job run. 
 
@@ -22,7 +33,7 @@ Note: I had to update a few things in this script as it seems to not working wit
 
 `nf-extract-tasks.sh` is similar to the `gadi_nfcore_report.sh` script, except here we need to grab from the `.command.run` files the names of the jobs, so we can then correlate that with the actual parameters used in the jobs (from the parameter search csv file). This file just collects the path and the job name. 
 
-`merge_resource_report.py` merges the resource report from `gadi_nfcore_report.sh` with the task id report from above, and then merges with the parameters file we have. This python code was tested with python3.8 and python3.9, and it only uses pandas, so should work with more python installations. 
+`merge_resource_report.py` merges the resource report from `gadi_nfcore_report.sh` with the task id report from above. This is then merged with the trace report `nf-trace.txt` from the nextflow job to get the process name and tag. Finally, the reports are merged with the parameters file we have. This python code was tested with python3.8 and python3.9, and it only uses pandas, so should work with most python installations. 
 
 
 ## Others
@@ -32,6 +43,12 @@ Also included in this directory are:
 * `cleanup.sh` -- script to removed all the files generated from the nextflow pipeline, not including the files in `work` directory. 
 
 The work directory contains all the various scripts, outputs, errors associated with each tasks in the nextflow pipeline. If the jobs run successfully, all you'll need from it are the resource usage, so just run the resource compilation code to get the final process report and then you won't need anything from it. If you want to keep them for whatever reason, then it's best to copy the whole folder into somewhere else and start with a clean directory for the next process. This way the resource gathering will be clean and only contain information from the the new process. 
+
+**TODO** The parameters csv file is currently copied from `Slurm` directory, and a column `pid` is added to it using the following line: 
+```
+awk 'BEGIN {OFS=","} NR==1 {print “pid”, $0; next} {print NR-1, $0}' parameter_search.csv > params_with_line.csv
+```
+so we can track the index of each job. Will need to rethink what we want to do here later. 
 
 
 # Running the jobs via Nextflow

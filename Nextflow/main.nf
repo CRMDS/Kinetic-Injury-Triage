@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 
 // Parameters 
 params.base_dir = "${params.project_dir}/Outputs/models/bcbert_runs"
-params.param_csv = "${params.project_dir}/parameter_search.csv"
+params.param_csv = "${params.project_dir}/Nextflow/params_with_line.csv"
 //params.script = "${params.project_dir}/Scripts/train.py"
 params.data_path = "${params.project_dir}/Data/labelled_kinetic_noteevents_2k.csv"
 params.testdata_path = "${params.project_dir}/Data/Kinetic_Injury_Test_Data.csv"
@@ -15,12 +15,13 @@ Channel
     .fromPath(params.param_csv)
     .splitCsv(skip: 1, header: false)
     .map { row -> 
-   	def optimiser = row[0].trim()
-        def learning_rate = row[1].trim()
-        def dropout = row[2].trim()
-        def unfreeze = row[3].trim()
-        def seed = row[4].trim()
-        def tag = "${optimiser}_lr-${learning_rate}_dropout-${dropout}_unf-${unfreeze}_seed-${seed}"
+   	def optimiser = row[1].trim()
+        def learning_rate = row[2].trim()
+        def dropout = row[3].trim()
+        def unfreeze = row[4].trim()
+        def seed = row[5].trim()
+        def fname = "${optimiser}_lr-${learning_rate}_dropout-${dropout}_unf-${unfreeze}_seed-${seed}"
+	def tag = row[0].trim()   // Line number from the parameter file
 
         return [
             optimiser: optimiser,
@@ -28,12 +29,16 @@ Channel
             dropout: dropout,
             unfreeze: unfreeze,
             seed: seed,
+	    fname: fname,
             tag: tag
         ]
     }
     .set { param_rows_ch } 
 
+// Define the training process, or what we called "Step 1: finetune" in the paper
 process train {
+
+    tag { config.tag }
 
     memory = '48GB'
     time = '1h'
@@ -45,12 +50,10 @@ process train {
     input:
     val config 
 
-    //output:
-    //file "${config.tag}.out"
-
     // Possible output of the configuration to train results channel, so predict can use it
-    //output: 
-    //val(config) into train_results_ch
+    output: 
+    val(config) 
+
 
     script:
     """
@@ -59,7 +62,7 @@ process train {
     source $HOME/envs/kit/bin/activate
 
     # create output path
-    mkdir -p ${params.base_dir}/${config.tag}
+    mkdir -p ${params.base_dir}/${config.fname}
 
     # Print out all the numbers so we know things are running correctly
     echo "Running with parameters:"
@@ -71,8 +74,8 @@ process train {
 
     python3 -u -B ${params.project_dir}/Scripts/train.py \\
         --data_path ${params.data_path} \\
-        --save_model_path ${params.base_dir}/${config.tag}/model.pt \\
-        --save_results_path ${params.base_dir}/${config.tag} \\
+        --save_model_path ${params.base_dir}/${config.fname}/model.pt \\
+        --save_results_path ${params.base_dir}/${config.fname} \\
         --model_name emilyalsentzer/Bio_ClinicalBERT \\
 	--local_model_path "/scratch/mp72/kineticInjury/huggingface/hub/models--emilyalsentzer--Bio_ClinicalBERT" \\
         --num_labels 2 \\
@@ -92,8 +95,8 @@ process train {
         --print_every 1 \\
         --verbose \\
         --debug \\
-        > ${params.project_dir}/PBS_Logs/${config.tag}.out \\
-	    2> ${params.project_dir}/PBS_Logs/${config.tag}.err
+        > ${params.project_dir}/PBS_Logs/${config.fname}.out \\
+	    2> ${params.project_dir}/PBS_Logs/${config.fname}.err
 
     echo "All done at: \$(date) | Host: \$(hostname)"
 
@@ -102,7 +105,11 @@ process train {
     """
 }
 
+// Define the prediction process, this is prediction using the trained model
+// this is what we called "Step 2: predict" in the paper. 
 process predict {
+
+    tag { config.tag}
 
     memory = '4GB'
     time = '1h'
@@ -115,7 +122,8 @@ process predict {
     val config 
 
     //output:
-    //file "${config.tag}.out"
+    //file "${config.fname}.out"
+
 
     script:
     """
@@ -135,14 +143,14 @@ process predict {
 
     python3 -u -B ${params.project_dir}/Scripts/predict.py \\
         --data_file ${params.testdata_path} \\
-        --weight_file ${params.base_dir}/${config.tag}/model.pt \\
-        --save_results_path ${params.base_dir}/${config.tag} \\
+        --weight_file ${params.base_dir}/${config.fname}/model.pt \\
+        --save_results_path ${params.base_dir}/${config.fname} \\
         --text_column ED_Triage_Comment \\
         --label_column Label \\
         --primary_key Encntr_ID \\
         --predict \\
-        > ${params.project_dir}/PBS_Logs/${config.tag}_pred.out \\
-        2> ${params.project_dir}/PBS_Logs/${config.tag}_pred.err
+        > ${params.project_dir}/PBS_Logs/${config.fname}_pred.out \\
+        2> ${params.project_dir}/PBS_Logs/${config.fname}_pred.err
 
     echo "All done at: \$(date) | Host: \$(hostname)"
 
@@ -153,11 +161,13 @@ process predict {
 
 // Call the process inside a workflow block
 workflow {
+    // Step 1: train the model
     //train(param_rows_ch)
-    predict(param_rows_ch)
+    // Step 2: predict using the trained model
+    //predict(param_rows_ch)
+
+    // If you want to run both train and predict in sequence, where the output of train 
+    // is piped to predict, uncomment the line below. 
+    train(param_rows_ch) | predict
 }
 
-// if you want to pipe the output of train to predict, do the following in the workflow block
-// workflow {
-//     train(param_rows_ch) | predict
-// }

@@ -5,7 +5,8 @@ import pandas as pd
 # Input files
 file1_path = "gadi-nf-core-joblogs.tsv"  # Contains Log_path
 file2_path = "gadi-nf-tasks.tsv"  # Base file (file_path + task_info)
-param_file_path = "parameter_search.csv"  # parameters used in the pipeline
+file_trace_path = "nf-trace.txt"  # Contains task_name, task_id, tags
+param_file_path = "params_with_line.csv"  # parameters used in the pipeline
 output_path = "merged-jobreport.tsv"
 
 # Step 1: Load file1 into a dict with stripped path as key
@@ -38,56 +39,61 @@ with open(file2_path, newline='') as f2, open(output_path, 'w', newline='') as f
         writer.writerow(row)
 
 
-# Step 3: Take the merged data, remove the first column (file_path),
-# for the second column, take just the task ID,
-# and write the output to the same TSV file
+# Step 3: Merge with the trace file, and 
+# keep only the useful columns
 
-# Read the original data
-with open(output_path, newline='') as fin:
-    reader = csv.reader(fin, delimiter='\t')
-    rows = list(reader)
+# Read the trace file
+pd_trace = pd.read_csv(file_trace_path, sep='\t')
+# Keep only the columns of "process", "name", "tag"
+pd_trace = pd_trace[['process', 'name', 'tag']]
 
-# Process and overwrite
-with open(output_path, 'w', newline='') as fout:
-    writer = csv.writer(fout, delimiter='\t')
-
-    header = rows[0]
-    # Drop first column, parse the second column for task name and ID
-    # and write the new header 
-    new_header = ['task_name', 'task_id'] + header[2:]  
-    writer.writerow(new_header)
-
-    for row in rows[1:]:
-        task_info = row[1]
-        match = re.match(r'(\w+)\s*\((\d+)\)', task_info)
-        if match:
-            task_name = match.group(1)
-            task_id = match.group(2)
-        else:
-            task_name = 'NA'
-            task_id = 'NA'
-        new_row = [task_name, task_id] + row[2:]
-        # match = re.search(r'\((\d+)\)', task_info)
-        # task_id = match.group(1) if match else 'NA'
-        # new_row = [task_id] + row[2:]
-        writer.writerow(new_row)
-
-
-# Step 4: Sort the output file by task_id
-# Read the processed file into a DataFrame, sort by task_id, and overwrite
+# Merge with the output file
 df = pd.read_csv(output_path, sep='\t')
-df['task_id'] = pd.to_numeric(df['task_id'], errors='coerce')
-df = df.sort_values('task_id').reset_index(drop=True)
-df.to_csv(output_path, sep='\t', index=False)
+# remove the first column (file_path)
+df = df.drop(columns=['file_path'])
+# Right join the trace data, which has "name", where the output file has "task_info"
+df = pd.merge(pd_trace, df, left_on ='name', right_on='task_info')
+
+# Remove the columns "name" and "task_info" from the merged DataFrame
+df = df.drop(columns=['name', 'task_info'])
 
 
-# Step 5: Merge with the parameter file
+
+
+# Step 4: Merge with the parameter file
+
+# convert the tag column to numeric. 
+df['tag'] = pd.to_numeric(df['tag'], errors='coerce')
+
+# Read the parameter file
 df_params = pd.read_csv(param_file_path)
-df_merged = pd.concat([df_params, df], axis=1)
-# Move 'task_name' and 'task_id' to the front
-df_merged = df_merged[['task_name', 'task_id'] + [col for col in df_merged.columns if col not in ['task_name', 'task_id']]]
+df_merged = pd.merge(df_params, df, left_on='pid', right_on='tag')
+
+# Move 'process' and 'tag' to the front
+df_merged = df_merged[['process', 'tag'] + [col for col in df_merged.columns if col not in ['process', 'tag']]]
+# Remove the 'pid' column
+df_merged = df_merged.drop(columns=['pid'])
 df_merged.to_csv(output_path, sep='\t', index=False)
 
 
+# Step 5: If there are more than one type of process, we want to create 
+# a separate file for each type of process 
+process_types = df_merged['process'].unique()
+for process in process_types:
+    # Filter the DataFrame for the current process type
+    df_process = df_merged[df_merged['process'] == process]
+
+    # Remove the columns "process" and "tag" from the filtered DataFrame
+    df_process = df_process.drop(columns=['process', 'tag'])
+    
+    # Define the output file name based on the process type
+    output_file = f"{process}_merged_jobreport.tsv"
+    
+    # Write the filtered DataFrame to a new TSV file
+    df_process.to_csv(output_file, sep='\t', index=False)
+    
+    print(f"Data for process '{process}' written to {output_file}")
+
+
 # Final step: Print confirmation message
-print(f"Merged data written to {output_path}")
+print(f"Full merged data written to {output_path}")

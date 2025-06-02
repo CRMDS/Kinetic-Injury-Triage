@@ -1,0 +1,11 @@
+pid,optimiser,learning_rate,dropout,layer_unfreeze,seed
+1,AdamW,0.0001,0.15,1,82
+2,AdamW,0.0001,0.15,1,15
+3,AdamW,0.0001,0.15,1,4
+4,AdamW,0.0001,0.15,1,95
+5,AdamW,0.0001,0.15,1,36
+6,AdamW,0.0001,0.15,1,32
+7,AdamW,0.0001,0.15,1,29
+8,AdamW,0.0001,0.15,1,18
+9,AdamW,0.0001,0.15,1,14
+10,AdamW,0.0001,0.15,1,87

@@ -6,4 +6,4 @@
 
 module load nextflow/21.04.3
 
-nextflow run main.nf
+nextflow run main.nf -with-trace
