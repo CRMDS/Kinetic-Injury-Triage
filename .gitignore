@@ -30,7 +30,6 @@ Nextflow/.nextflow/
 Nextflow/.nextflow.log*
 Nextflow/*.sh.*
 Nextflow/work/
-Nextflow/nextflow.config
 
 
 
