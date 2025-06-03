@@ -43,6 +43,8 @@ so we can track the index of each job. Will need to rethink what we want to do h
 
 # Running the jobs via Nextflow
 
+Before running the jobs, make sure you specify the correct processes you want to do in the `workflow` section of `main.nf`. 
+
 To run these jobs via through Nextflow, you'll need to submit the nextflow pipeline (i.e. the `main.nf` file) as a job on the cluster. After the nextflow job start to run on the cluster, it'll spawn off the individual jobs onto the cluster, like when you submit the individual jobs with a `qsub <job>.sh` command. 
 
 The nextflow pipeline job will only need one cpu and the minimum RAM to run, it needs to run for the entire time that all the jobs are running. So if you think your 1000 python jobs of 3 hours each will take 2 days to finish running on the cluster, then ask for 2 days for the pipeline job. Otherwise, the python jobs will not get started (or die halfway).
