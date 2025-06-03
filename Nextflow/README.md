@@ -11,18 +11,8 @@ Note: I had to update a few things in this script as it seems to not working wit
 
 ## Nextflow related
 
-`nextflow.config` is the configuration file that contains information about gadi, as this file contains project specific information, it is not pushed into the repo. See [NCI nextflow documentation](https://opus.nci.org.au/spaces/DAE/pages/138903678/Nextflow) for what typically goes into the configuration file. `trace` is enabled in the config file with the following information: 
-
-```
-trace {
-    enabled = true
-    file = "nf-trace.txt"
-    fields = 'task_id,process,name,status,exit,duration,tag,realtime,%cpu,%mem,rss,peak_rss'
-}
-```
-
-This allows us to match the jobs with the parameters for job resource reports. 
-
+`nextflow.config` is the configuration file that contains information about gadi, `trace` is enabled in this configuration file to allow resource tracing and merging of job information later. 
+See [NCI nextflow documentation](https://opus.nci.org.au/spaces/DAE/pages/138903678/Nextflow) for how to set these up for your project. 
 
 `main.nf` is the main nextflow script that contains information about the job run. 
 
@@ -46,7 +36,7 @@ The work directory contains all the various scripts, outputs, errors associated 
 
 **TODO** The parameters csv file is currently copied from `Slurm` directory, and a column `pid` is added to it using the following line: 
 ```
-awk 'BEGIN {OFS=","} NR==1 {print “pid”, $0; next} {print NR-1, $0}' parameter_search.csv > params_with_line.csv
+awk 'BEGIN {OFS=","} NR==1 {print "pid", $0; next} {print NR-1, $0}' parameter_search.csv > params_with_line.csv
 ```
 so we can track the index of each job. Will need to rethink what we want to do here later. 
 

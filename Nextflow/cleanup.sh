@@ -8,4 +8,5 @@
 rm .nextflow.log*
 rm *.sh.e*
 rm *.sh.o*
+rm nf-trace.txt*
 rm ../PBS_Logs/*

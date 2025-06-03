@@ -41,9 +41,20 @@ process train {
     tag { config.tag }
 
     memory = '48GB'
-    time = '1h'
+    //time = '1h'
+    //time {config.unfreeze == '2' ? '2h' : '1h'}
+    time {
+	if(config.unfreeze == '2') {
+	    return '2h'
+        } else if(config.optimiser == "Adam") {
+	    return '1h 30m'
+	} else {
+	    return '1h'
+	}
+    }
     cpus = 12
     gpus = 1
+    queue = 'gpuvolta'
 
     clusterOptions = '-l jobfs=20GB,wd'
 
@@ -162,12 +173,12 @@ process predict {
 // Call the process inside a workflow block
 workflow {
     // Step 1: train the model
-    //train(param_rows_ch)
+    train(param_rows_ch)
     // Step 2: predict using the trained model
     //predict(param_rows_ch)
 
     // If you want to run both train and predict in sequence, where the output of train 
     // is piped to predict, uncomment the line below. 
-    train(param_rows_ch) | predict
+    //train(param_rows_ch) | predict
 }
 
