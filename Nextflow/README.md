@@ -4,7 +4,8 @@ This is the directory for Nextflow files for running and submitting the jobs ont
 
 ## External code
 
-`gadi_nfcore_report.sh` is a script from [nextflow community](https://github.com/Sydney-Informatics-Hub/HPC_usage_reports/blob/master/Scripts/gadi_nfcore_report.sh). It goes through all the files under the `work` directory and create a usage report of resources used by the jobs on NCI. This script generates the `gadi-nf-core-joblogs.tsv` report that collects all the resources usages. 
+`gadi_nfcore_report.sh` is a script from [nextflow community](https://nf-co.re/configs/nci_gadi/).
+It goes through all the files under the `work` directory and create a usage report of resources used by the jobs on NCI. This script generates the `gadi-nf-core-joblogs.tsv` report that collects all the resources usages. 
 
 Note: I had to update a few things in this script as it seems to not working with some of fields in the current NCI resource reports, also I needed to grab the GPU resource information. 
 

@@ -6,7 +6,6 @@ nextflow.enable.dsl=2
 // Parameters 
 params.base_dir = "${params.project_dir}/Outputs/models/bcbert_runs"
 params.param_csv = "${params.project_dir}/Nextflow/params_with_line.csv"
-//params.script = "${params.project_dir}/Scripts/train.py"
 params.data_path = "${params.project_dir}/Data/labelled_kinetic_noteevents_2k.csv"
 params.testdata_path = "${params.project_dir}/Data/Kinetic_Injury_Test_Data.csv"
 
@@ -43,15 +42,9 @@ process train {
     memory = '48GB'
     //time = '1h'
     //time {config.unfreeze == '2' ? '2h' : '1h'}
-    time {
-	if(config.unfreeze == '2') {
-	    return '2h'
-        } else if(config.optimiser == "Adam") {
-	    return '1h 30m'
-	} else {
-	    return '1h'
-	}
-    }
+    // time format: '1h'; '1h 30m'; '30m' 
+    time { config.optimiser == 'SGD' ? '4h' : (config.unfreeze == '0' ? '2h' : '1h') }
+
     cpus = 12
     gpus = 1
     queue = 'gpuvolta'
@@ -173,12 +166,12 @@ process predict {
 // Call the process inside a workflow block
 workflow {
     // Step 1: train the model
-    train(param_rows_ch)
+    //train(param_rows_ch)
     // Step 2: predict using the trained model
     //predict(param_rows_ch)
 
     // If you want to run both train and predict in sequence, where the output of train 
     // is piped to predict, uncomment the line below. 
-    //train(param_rows_ch) | predict
+    train(param_rows_ch) | predict
 }
 
