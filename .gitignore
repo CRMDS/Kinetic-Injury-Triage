@@ -30,7 +30,7 @@ Nextflow/.nextflow/
 Nextflow/.nextflow.log*
 Nextflow/*.sh.*
 Nextflow/work/
-
+Nextflow/nf-trace.txt
 
 
 ### I don't think anything below is relevant to this project, but I will leave it here for now ###

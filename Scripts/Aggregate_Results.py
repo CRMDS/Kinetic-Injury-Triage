@@ -10,6 +10,7 @@ and outputs a consolidated summary in CSV and Excel formats.
 import os
 import pandas as pd
 from tqdm import tqdm
+import argparse
 
 def extract_params_from_folder(folder_name):
     """
@@ -531,7 +532,7 @@ def aggregate_results(base_directory):
 
     return training_result, fine_tune_result, prediction_result, fine_tune_prediction_result
 
-def main():
+def main(args):
     """
     Main function to execute the aggregation process.
     
@@ -541,7 +542,10 @@ def main():
     3. Saves training, fine-tuned, prediction, and fine-tuned prediction results to separate CSV and Excel files
     """
     # Get the current directory (where the script is running)
-    base_dir = os.getcwd()
+    base_dir = args.base_directory
+    if not os.path.exists(base_dir):
+        raise ValueError(f"Base directory {base_dir} does not exist")
+    print(f"Using base directory: {base_dir}")
     
     # Create Results directory if it doesn't exist
     results_dir = os.path.join(base_dir, "Results")
@@ -591,4 +595,8 @@ def main():
         print("No fine-tuned prediction results to save")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Aggregate model evaluation results across multiple trials.")
+    parser.add_argument("--base_directory", type=str, default=os.getcwd(),
+                        help="Base directory containing the Outputs folder with test results")
+    args = parser.parse_args()
+    main(args)
