@@ -7,6 +7,7 @@ nextflow.enable.dsl=2
 params.base_dir = "${params.project_dir}/Outputs/models/bcbert_runs"
 params.param_csv = "${params.project_dir}/Nextflow/params_with_line.csv"
 params.data_path = "${params.project_dir}/Data/labelled_kinetic_noteevents_2k.csv"
+params.ftunedata_path = "${params.project_dir}/Data/Kinetic_Injury_Finetune_Data.csv"
 params.testdata_path = "${params.project_dir}/Data/Kinetic_Injury_Test_Data.csv"
 
 // Set up channel
@@ -20,7 +21,7 @@ Channel
         def unfreeze = row[4].trim()
         def seed = row[5].trim()
         def fname = "${optimiser}_lr-${learning_rate}_dropout-${dropout}_unf-${unfreeze}_seed-${seed}"
-	def tag = row[0].trim()   // Line number from the parameter file
+	    def tag = row[0].trim()   // Line number from the parameter file
 
         return [
             optimiser: optimiser,
@@ -28,7 +29,7 @@ Channel
             dropout: dropout,
             unfreeze: unfreeze,
             seed: seed,
-	    fname: fname,
+	        fname: fname,
             tag: tag
         ]
     }
@@ -163,6 +164,130 @@ process predict {
     """
 }
 
+// Define the finetuning process, this is what we called 
+// "Step 3: further finetune" in the paper.
+process ftune {
+    
+    tag { config.tag }
+
+    memory = '4GB'
+    //time = '1h'
+    time { config.unfreeze == '0' ? '24h' : '5h') 
+
+    cpus = 1
+    //gpus = 1
+    queue = 'normal'
+
+    clusterOptions = '-l jobfs=4GB,wd'
+
+    input:
+    val config 
+
+    output: 
+    val(config) 
+
+    script:
+    """
+   
+    module load pytorch/1.10.0
+    source $HOME/envs/kit/bin/activate
+
+    # create output path -- shouldn't be necessary. 
+    #mkdir -p ${params.base_dir}/${config.fname}
+
+    # Print out all the numbers so we know things are running correctly
+    echo "Running with parameters:"
+    echo "Optimiser: ${config.optimiser}"
+    echo "Learning Rate: ${config.learning_rate}"
+    echo "Dropout: ${config.dropout}"
+    echo "Layers to Unfreeze: ${config.unfreeze}"
+    echo "Seed: ${config.seed}"
+
+    python3 -u -B ${params.project_dir}/Scripts/finetune.py \\
+        --data_path ${params.ftunedata_path} \\
+        --save_model_path ${params.base_dir}/${config.fname}/model_finetune.pt \\
+        --weight_file ${params.base_dir}/${config.fname}/model.pt \\
+        --save_results_path ${params.base_dir}/${config.fname} \\
+        --model_name emilyalsentzer/Bio_ClinicalBERT \\
+        --local_model_path "/scratch/mp72/kineticInjury/huggingface/hub/models--emilyalsentzer--Bio_ClinicalBERT" \\
+        --num_labels 2 \\
+        --lr ${config.learning_rate} \\
+        --weight_decay 0.01 \\
+        --batch_size 64 \\
+        --seed ${config.seed} \\
+        --num_epochs 200 \\
+        --test_split 0.2 \\
+        --text_column ED_Triage_Comment \\
+        --label_column Label \\
+        --primary_key Encntr_ID \\
+        --optimizer_class ${config.optimiser} \\
+        --unfreeze_layers ${config.unfreeze} \\
+        --early_stop_patience 10 \\
+        --dropout_prob ${config.dropout} \\
+        --print_every 1 \\
+        --verbose \\
+        --debug \\
+        > ${params.project_dir}/PBS_Logs/${config.fname}_finetune.out \\
+        2> ${params.project_dir}/PBS_Logs/${config.fname}_finetune.err
+    
+    echo "All done at: \$(date) | Host: \$(hostname)"
+
+    deactivate
+
+    """
+}
+
+// Define the prediction process for the finetuned model
+// This is what we called "Step 4: predict with domain adapted model" in the paper.
+process pred_ft {
+    
+    tag { config.tag }
+
+    memory = '4GB'
+    time = '1h'
+    cpus = 1
+    queue = 'normal'
+
+    clusterOptions = '-l jobfs=20GB,wd'
+
+    input:
+    val config 
+
+    script:
+    """
+   
+    module load pytorch/1.10.0
+    source $HOME/envs/kit/bin/activate
+
+    # No need to create output path here, as it is already created in the train process
+
+    # Print out all the numbers so we know things are running correctly
+    echo "Running with parameters:"
+    echo "Optimiser: ${config.optimiser}"
+    echo "Learning Rate: ${config.learning_rate}"
+    echo "Dropout: ${config.dropout}"
+    echo "Layers to Unfreeze: ${config.unfreeze}"
+    echo "Seed: ${config.seed}"
+
+    python3 -u -B ${params.project_dir}/Scripts/predict.py \\
+        --data_file ${params.testdata_path} \\
+        --weight_file ${params.base_dir}/${config.fname}/model_finetune.pt \\
+        --save_results_path ${params.base_dir}/${config.fname} \\
+        --text_column ED_Triage_Comment \\
+        --label_column Label \\
+        --primary_key Encntr_ID \\
+        --predict \\
+        --finetune \\
+        > ${params.project_dir}/PBS_Logs/${config.fname}_pred_finetune.out \\
+        2> ${params.project_dir}/PBS_Logs/${config.fname}_pred_finetune.err
+
+    echo "All done at: \$(date) | Host: \$(hostname)"
+
+    deactivate
+
+    """
+}
+
 // Call the process inside a workflow block
 workflow {
     // Step 1: train the model
@@ -172,6 +297,10 @@ workflow {
 
     // If you want to run both train and predict in sequence, where the output of train 
     // is piped to predict, uncomment the line below. 
-    train(param_rows_ch) | predict
+    //train(param_rows_ch) | predict
+
+    // To run the finetuning and the prediction of the finetuned model 
+    // in one go. Uncomment the lines below.
+    ftune(param_rows_ch) | pred_ft
 }
 
