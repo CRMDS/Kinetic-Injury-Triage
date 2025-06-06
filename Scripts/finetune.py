@@ -41,6 +41,7 @@ def main(args):
 
     classifier = BioClinicalBERTClassifier(
         model_name=args.model_name,
+        local_model_path=args.local_model_path,
         num_labels=args.num_labels,
         optimizer_class=optimizer_class,
         optimizer_params={"lr": args.lr, "weight_decay": args.weight_decay},
@@ -83,6 +84,8 @@ if __name__ == "__main__":
         description="Script to use Bio_ClinicalBERTClassifier for predictions and fine tuning."
     )
     parser.add_argument("--weight_file", type=str, required=True, help="Directory containing .pt file")
+    parser.add_argument("--local_model_path", type=str, default=None,
+                        help="Local path to pre-trained model weights (if any)")
     parser.add_argument("--data_file", type=str, required=True, help="Path to new dataset CSV file")
     parser.add_argument("--text_column", type=str, default="TEXT", help="Name of text column in the dataset")
     parser.add_argument("--label_column", type=str, default="LABEL", help="Name of label column in the dataset")
