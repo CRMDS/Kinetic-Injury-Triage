@@ -3,6 +3,7 @@ Outputs/
 Slurm_Logs/
 PBS_Logs/
 PBS/
+Outputs/logs/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -31,6 +32,8 @@ Nextflow/.nextflow.log*
 Nextflow/*.sh.*
 Nextflow/work/
 Nextflow/nf-trace.txt
+Nextflow/params_with_line.csv
+
 
 
 ### I don't think anything below is relevant to this project, but I will leave it here for now ###
