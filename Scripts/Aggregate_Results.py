@@ -84,7 +84,7 @@ def aggregate_results(base_directory):
         if "results_summary_fine_tune.csv" in files:
             fine_tune_files.append(os.path.join(root, "results_summary_fine_tune.csv"))
         if "evaluation_results.csv" in files:
-            prediction_files.append(os.path.join(root, "evaluation_results.csv"))
+            prediction_files.append(os.path.join(root, "model_evaluation_results.csv"))
         if "model_finetuned_evaluation_results.csv" in files:  # New condition for fine-tuned prediction results
             fine_tune_prediction_files.append(os.path.join(root, "model_finetuned_evaluation_results.csv"))
     

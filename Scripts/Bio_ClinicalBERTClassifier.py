@@ -586,7 +586,7 @@ class BioClinicalBERTClassifier:
         res = self._run_train_epoch(
             dataset,
             num_epochs=num_epochs,
-            test_split=0.2,
+            test_split=0.2,        # TODO: make this configurable
             early_stop_patience=early_stop_patience,
             text_column=text_column,
             label_column=label_column,

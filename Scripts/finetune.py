@@ -71,7 +71,8 @@ def main(args):
             num_epochs=args.num_epochs,
             debug=args.debug,
             print_every=args.print_every,
-            early_stop_patience=args.early_stop_patience
+            early_stop_patience=args.early_stop_patience,
+            primary_key=args.primary_key
         )
         
         print(f"\nFine tuning results for model {os.path.relpath(args.weight_file)}:")
