@@ -7,3 +7,7 @@
 module load nextflow/21.04.3
 
 nextflow run main.nf -with-trace
+
+
+
+# TODO: Output checks of walltime to make sure we're running the right thing. 

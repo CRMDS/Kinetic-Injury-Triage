@@ -5,10 +5,13 @@ nextflow.enable.dsl=2
 
 // Parameters 
 params.base_dir = "${params.project_dir}/Outputs/models/bcbert_runs"
+params.ftune_base_dir = "${params.project_dir}/Outputs/models/cpu_finetune/"
 params.param_csv = "${params.project_dir}/Nextflow/params_with_line.csv"
 params.data_path = "${params.project_dir}/Data/labelled_kinetic_noteevents_2k.csv"
 params.ftunedata_path = "${params.project_dir}/Data/Kinetic_Injury_Finetune_Data.csv"
 params.testdata_path = "${params.project_dir}/Data/Kinetic_Injury_Test_Data.csv"
+
+//TODO: put the local path of the model here. 
 
 // Set up channel
 Channel
@@ -21,7 +24,7 @@ Channel
         def unfreeze = row[4].trim()
         def seed = row[5].trim()
         def fname = "${optimiser}_lr-${learning_rate}_dropout-${dropout}_unf-${unfreeze}_seed-${seed}"
-	    def tag = row[0].trim()   // Line number from the parameter file
+        def tag = row[0].trim()   // Line number from the parameter file
 
         return [
             optimiser: optimiser,
@@ -172,7 +175,7 @@ process ftune {
 
     memory = '4GB'
     //time = '1h'
-    time { config.unfreeze == '0' ? '24h' : '5h') 
+    time { config.unfreeze == '0' ? '24h' : '5h'} 
 
     cpus = 1
     //gpus = 1
@@ -192,8 +195,8 @@ process ftune {
     module load pytorch/1.10.0
     source $HOME/envs/kit/bin/activate
 
-    # create output path -- shouldn't be necessary. 
-    #mkdir -p ${params.base_dir}/${config.fname}
+    # create output path -- putting the finetuned results separately from the training results
+    mkdir -p ${params.ftune_base_dir}/${config.fname}
 
     # Print out all the numbers so we know things are running correctly
     echo "Running with parameters:"
@@ -204,10 +207,10 @@ process ftune {
     echo "Seed: ${config.seed}"
 
     python3 -u -B ${params.project_dir}/Scripts/finetune.py \\
-        --data_path ${params.ftunedata_path} \\
-        --save_model_path ${params.base_dir}/${config.fname}/model_finetune.pt \\
+        --data_file ${params.ftunedata_path} \\
+        --save_model_path ${params.ftune_base_dir}/${config.fname}/model_finetune.pt \\
         --weight_file ${params.base_dir}/${config.fname}/model.pt \\
-        --save_results_path ${params.base_dir}/${config.fname} \\
+        --save_results_path ${params.ftune_base_dir}/${config.fname} \\
         --model_name emilyalsentzer/Bio_ClinicalBERT \\
         --local_model_path "/scratch/mp72/kineticInjury/huggingface/hub/models--emilyalsentzer--Bio_ClinicalBERT" \\
         --num_labels 2 \\
@@ -227,6 +230,7 @@ process ftune {
         --print_every 1 \\
         --verbose \\
         --debug \\
+        --finetune \\
         > ${params.project_dir}/PBS_Logs/${config.fname}_finetune.out \\
         2> ${params.project_dir}/PBS_Logs/${config.fname}_finetune.err
     
@@ -271,8 +275,8 @@ process pred_ft {
 
     python3 -u -B ${params.project_dir}/Scripts/predict.py \\
         --data_file ${params.testdata_path} \\
-        --weight_file ${params.base_dir}/${config.fname}/model_finetune.pt \\
-        --save_results_path ${params.base_dir}/${config.fname} \\
+        --weight_file ${params.ftune_base_dir}/${config.fname}/model_finetune.pt \\
+        --save_results_path ${params.ftune_base_dir}/${config.fname} \\
         --text_column ED_Triage_Comment \\
         --label_column Label \\
         --primary_key Encntr_ID \\

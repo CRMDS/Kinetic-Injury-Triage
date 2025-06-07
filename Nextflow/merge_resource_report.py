@@ -6,7 +6,7 @@ import pandas as pd
 file1_path = "gadi-nf-core-joblogs.tsv"  # Contains Log_path
 file2_path = "gadi-nf-tasks.tsv"  # Base file (file_path + task_info)
 file_trace_path = "nf-trace.txt"  # Contains task_name, task_id, tags
-param_file_path = "params_with_line.csv"  # parameters used in the pipeline
+param_file_path = "params_with_line_test.csv"  # parameters used in the pipeline
 output_path = "merged-jobreport.tsv"
 
 # Step 1: Load file1 into a dict with stripped path as key
