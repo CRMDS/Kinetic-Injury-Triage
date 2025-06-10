@@ -175,7 +175,7 @@ process ftune {
 
     memory = '4GB'
     //time = '1h'
-    time { config.unfreeze == '0' ? '24h' : '5h'} 
+    time { config.unfreeze == '0' ? '24h' : '7h' }
 
     cpus = 1
     //gpus = 1

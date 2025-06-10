@@ -3,7 +3,8 @@ Outputs/
 Slurm_Logs/
 PBS_Logs/
 PBS/
-Outputs_logs/
+Outputs_archive/
+
 
 # Jupyter Notebook
 .ipynb_checkpoints

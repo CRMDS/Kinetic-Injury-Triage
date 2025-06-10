@@ -83,7 +83,7 @@ def aggregate_results(base_directory):
             result_files.append(os.path.join(root, "results_summary.csv"))
         if "results_summary_fine_tune.csv" in files:
             fine_tune_files.append(os.path.join(root, "results_summary_fine_tune.csv"))
-        if "evaluation_results.csv" in files:
+        if "model_evaluation_results.csv" in files:
             prediction_files.append(os.path.join(root, "model_evaluation_results.csv"))
         if "model_finetuned_evaluation_results.csv" in files:  # New condition for fine-tuned prediction results
             fine_tune_prediction_files.append(os.path.join(root, "model_finetuned_evaluation_results.csv"))
@@ -553,13 +553,17 @@ def main(args):
     
     # Aggregate results - now includes fine-tuning prediction results
     training_df, fine_tune_df, prediction_df, fine_tune_prediction_df = aggregate_results(base_dir)
-    
+   
+    print("\nSaving all the results. \n")
+    print("Note: saving to excel files are disabled. \n\n")
+    # TODO: fix the to excel thing for python 3.9 on NCI. 
+
     # Save training results if available
     if training_df is not None:
         train_csv = os.path.join(results_dir, "training_results.csv")
         train_excel = os.path.join(results_dir, "training_results.xlsx")
         training_df.to_csv(train_csv, index=False)
-        training_df.to_excel(train_excel, index=False)
+#        training_df.to_excel(train_excel, index=False)
         print(f"Training metrics saved to {train_csv} and {train_excel}")
     else:
         print("No training results to save")
@@ -569,7 +573,7 @@ def main(args):
         fine_tune_csv = os.path.join(results_dir, "fine_tune_results.csv")
         fine_tune_excel = os.path.join(results_dir, "fine_tune_results.xlsx")
         fine_tune_df.to_csv(fine_tune_csv, index=False)
-        fine_tune_df.to_excel(fine_tune_excel, index=False)
+#        fine_tune_df.to_excel(fine_tune_excel, index=False)
         print(f"Fine-tune metrics saved to {fine_tune_csv} and {fine_tune_excel}")
     else:
         print("No fine-tune results to save")
@@ -579,7 +583,7 @@ def main(args):
         pred_csv = os.path.join(results_dir, "prediction_results.csv")
         pred_excel = os.path.join(results_dir, "prediction_results.xlsx")
         prediction_df.to_csv(pred_csv, index=False)
-        prediction_df.to_excel(pred_excel, index=False)
+#        prediction_df.to_excel(pred_excel, index=False)
         print(f"Prediction metrics saved to {pred_csv} and {pred_excel}")
     else:
         print("No prediction results to save")
@@ -589,7 +593,7 @@ def main(args):
         fine_tune_pred_csv = os.path.join(results_dir, "fine_tune_prediction_results.csv")
         fine_tune_pred_excel = os.path.join(results_dir, "fine_tune_prediction_results.xlsx")
         fine_tune_prediction_df.to_csv(fine_tune_pred_csv, index=False)
-        fine_tune_prediction_df.to_excel(fine_tune_pred_excel, index=False)
+#        fine_tune_prediction_df.to_excel(fine_tune_pred_excel, index=False)
         print(f"Fine-tuned prediction metrics saved to {fine_tune_pred_csv} and {fine_tune_pred_excel}")
     else:
         print("No fine-tuned prediction results to save")
