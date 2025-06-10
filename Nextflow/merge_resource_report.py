@@ -80,7 +80,6 @@ df = pd.merge(pd_trace, df, left_on ='name', right_on='task_info')
 df = df.drop(columns=['name', 'task_info'])
 
 
-
 # Step 4: Merge with the parameter file
 
 # convert the tag column to numeric. 
@@ -137,6 +136,25 @@ print(f"Total service units used (completed jobs): {total_service_units}")
 
 
 # Step 6: If there are more than one type of process, we want to create 
+# a separate file for each type of process 
+process_types = df_merged['process'].unique()
+for process in process_types:
+    # Filter the DataFrame for the current process type
+    df_process = df_merged[df_merged['process'] == process]
+
+    # Remove the columns "process" and "tag" from the filtered DataFrame
+    df_process = df_process.drop(columns=['process', 'tag'])
+    
+    # Define the output file name based on the process type
+    output_file = f"{process}_merged_jobreport.tsv"
+    
+    # Write the filtered DataFrame to a new TSV file
+    df_process.to_csv(output_file, sep='\t', index=False)
+    
+    print(f"Data for process '{process}' written to {output_file}")
+
+
+# Step 5: If there are more than one type of process, we want to create 
 # a separate file for each type of process 
 process_types = df_merged['process'].unique()
 for process in process_types:

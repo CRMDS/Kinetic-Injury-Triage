@@ -32,7 +32,7 @@ Channel
             dropout: dropout,
             unfreeze: unfreeze,
             seed: seed,
-	        fname: fname,
+	    fname: fname,
             tag: tag
         ]
     }
@@ -62,7 +62,7 @@ process train {
     output: 
     val(config) 
 
-
+    
     script:
     """
    
