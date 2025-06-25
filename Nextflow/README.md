@@ -22,7 +22,7 @@ See [NCI nextflow documentation](https://opus.nci.org.au/spaces/DAE/pages/138903
 
 ## Resource usage
 
-`nf-extract-tasks.sh` is similar to the `gadi_nfcore_report.sh` script, except here we need to grab from the `.command.run` files the names of the jobs, so we can then correlate that with the actual parameters used in the jobs (from the parameter search csv file). This file just collects the path and the job name. 
+`gadi_nf_extract_tasks.sh` is similar to the `gadi_nfcore_report.sh` script, except here we need to grab from the `.command.run` files the names of the jobs, so we can then correlate that with the actual parameters used in the jobs (from the parameter search csv file). This file just collects the path and the job name. This script also output information about exit codes for every task, this can then be used in the merge report to only grab the resources from successful tasks. 
 
 `merge_resource_report.py` merges the resource report from `gadi_nfcore_report.sh` with the task id report from above. This is then merged with the trace report `nf-trace.txt` from the nextflow job to get the process name and tag. Finally, the reports are merged with the parameters file we have. This python code was tested with python3.8 and python3.9, and it only uses pandas, so should work with most python installations. 
 
