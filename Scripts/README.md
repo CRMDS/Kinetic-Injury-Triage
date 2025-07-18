@@ -70,6 +70,7 @@ Also included in this directory are:
 * `MIMIC3_data_preprocessing.ipynb` — Jupyter notebook for preprocessing MIMIC-III data into `TEXT` and `LABEL` columns for model training. This handles text cleaning, label mapping, and dataset export.
 
 The `Outputs/` directory contains all model checkpoints, per-run CSV logs, and predictions.  
+
 If the models train and run successfully, all you'll need from `Outputs/` is the `results_summary.csv` and `model_finetuned_evaluation_results.csv` files. If you want to keep all checkpoints and intermediate logs, it's recommended to move the folder for archiving and start a clean run for new experiments.
 
 
