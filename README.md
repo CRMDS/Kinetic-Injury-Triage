@@ -31,22 +31,19 @@ This folder contains **Nextflow pipeline files for large-scale job orchestration
 See `Nextflow/README.md` for more details.
 
 
-## `Slurm/` – WSU HPC / Ingham
 
-This folder contains **Slurm job scripts for running the model on WSU HPC and Ingham systems**, which use Slurm (not PBS).
+## `Results/` – Metrics & Analysis
 
-### Scripts include:
+Contains **model results, timing benchmarks, and supplementary materials**:
 
-- `parameter_search.slurm` – Pretraining on GPUs (MIMIC dataset). Launches 810 parallel jobs with varying hyperparameters.  
-- `finetune_models.slurm` – Fine-tuning on CPUs (Ingham One dataset). Launches 240 jobs reading from `finetune_parameters.csv`.  
-- `predict.slurm` – Runs predictions on fine-tuned models. Outputs per-sample predictions and metrics.
+- `fine_tune_results.csv`, `fine_tune_prediction_results.csv` – Fine-tuning metrics (Ingham One → Ingham Two)  
+- `prediction_results.csv`, `training_results.csv` – Pretraining results (MIMIC dataset)  
+- `Supplementary.pdf` – Summary of results (Adam/SGD comparisons)  
+- `resultsAnalysis.ipynb` – Jupyter notebook for plots and statistical summaries  
+- `resComparison.R`, `ttestAllPairs.R` – Paired t-tests and statistical tests  
+- Timing CSVs for CPU vs GPU performance
 
-### Hyperparameter Configuration:
-
-- `parameter_search.csv` – optimizer, learning rate, dropout, layer unfreeze, seeds (pretraining)  
-- `finetune_parameters.csv` – same parameters for fine-tuning sweep  
-
-See `Slurm/README.md` for job instructions.
+See `Results/README.md` for more.
 
 
 ## `Scripts/` – Python Code (CPU/GPU)
@@ -65,18 +62,25 @@ Contains all core **Python scripts for model training, fine-tuning, and predicti
 See `Scripts/README.md` for usage.
 
 
-## `Results/` – Metrics & Analysis
 
-Contains **model results, timing benchmarks, and supplementary materials**:
+## `Slurm/` – WSU HPC / Ingham
 
-- `fine_tune_results.csv`, `fine_tune_prediction_results.csv` – Fine-tuning metrics (Ingham One → Ingham Two)  
-- `prediction_results.csv`, `training_results.csv` – Pretraining results (MIMIC dataset)  
-- `Supplementary.pdf` – Summary of results (Adam/SGD comparisons)  
-- `resultsAnalysis.ipynb` – Jupyter notebook for plots and statistical summaries  
-- `resComparison.R`, `ttestAllPairs.R` – Paired t-tests and statistical tests  
-- Timing CSVs for CPU vs GPU performance
+This folder contains **Slurm job scripts for running the model on WSU HPC and Ingham systems**, which use Slurm (not PBS).
 
-See `Results/README.md` for more.
+### Scripts include:
+
+- `parameter_search.slurm` – Pretraining on GPUs (MIMIC dataset). Launches 810 parallel jobs with varying hyperparameters.  
+- `finetune_models.slurm` – Fine-tuning on CPUs (Ingham One dataset). Launches 240 jobs reading from `finetune_parameters.csv`.  
+- `predict.slurm` – Runs predictions on fine-tuned models. Outputs per-sample predictions and metrics.
+
+### Hyperparameter Configuration:
+
+- `parameter_search.csv` – optimizer, learning rate, dropout, layer unfreeze, seeds (pretraining)  
+- `finetune_parameters.csv` – same parameters for fine-tuning sweep  
+
+See `Slurm/README.md` for job instructions.
+
+
 
 
 # Workflow Summary
