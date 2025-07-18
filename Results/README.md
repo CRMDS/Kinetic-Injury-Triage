@@ -15,9 +15,9 @@ This directory contains the training, fine-tuning, and prediction results from e
 
 `fine_tune_results.csv` and `fine_tune_results.xlsx` contain the fine-tuning performance metrics on the Ingham One dataset.
 
-`prediction_results.csv` and `prediction_results.xlsx` contain the prediction results on the Ingham One dataset using the Bio-Clinical BERT model trained on the MIMIC dataset (without fine-tuning).
+`prediction_results.csv` and `prediction_results.xlsx` contain the prediction results on the Ingham One dataset using the $\texttt{Bio\_ClinicalBERT}$ model trained on the MIMIC dataset (without fine-tuning).
 
-`training_results.csv` and `training_results.xlsx` contain the training performance results of the Bio-Clinical BERT model on the MIMIC dataset.
+`training_results.csv` and `training_results.xlsx` contain the training performance results of the $\texttt{Bio\_ClinicalBERT}$ model on the MIMIC dataset.
 
 
 ## Timing & Performance Experiments
