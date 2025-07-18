@@ -13,16 +13,16 @@ This directory contains the training, fine-tuning, and prediction results from e
 
 `fine_tune_prediction_results.csv` and `fine_tune_prediction_results.xlsx` contain the model’s prediction metrics on the Ingham Two dataset after fine-tuning on the Ingham One dataset.
 
-`fine_tune_results.csv` and `fine_tune_results.xlsx` contain the fine-tuning metrics on Ingham One dataset
+`fine_tune_results.csv` and `fine_tune_results.xlsx` contain the fine-tuning performance metrics on the Ingham One dataset.
 
-`prediction_results.csv` and `prediction_results.xlsx` are results from the base model trained on MIMIC data (no fine-tuning).
+`prediction_results.csv` and `prediction_results.xlsx` contain the prediction results on the Ingham One dataset using the base model trained on the MIMIC dataset (without fine-tuning).
 
-`training_results.csv` and `training_results.xlsx` are the training performance results of the base model on MIMIC data
+`training_results.csv` and `training_results.xlsx` contain the training performance results of the base model on the MIMIC dataset.
 
 
 ## Timing & Performance Experiments
 
-`time_finetune_diffCPU_AdamW_lr0.0001_dr0.15_unf1.csv` is the result of fine-tuning duration across different CPU allocations. 
+`time_finetune_diffCPU_AdamW_lr0.0001_dr0.15_unf1.csv` contains the fine-tuning duration results across different CPU allocations.
 
 `time_finetune_pred_diffCPU_AdamW_lr0.0001_dr0.15_unf1.csv` contains inference time benchmarks for the same CPU sweep. 
 
