@@ -19,7 +19,6 @@ This directory contains the training, fine-tuning, and prediction results from e
 
 `training_results.csv` and `training_results.xlsx` are the training performance results of the base model on MIMIC data
 
----
 
 ## Timing & Performance Experiments
 
@@ -27,7 +26,7 @@ This directory contains the training, fine-tuning, and prediction results from e
 
 `time_finetune_pred_diffCPU_AdamW_lr0.0001_dr0.15_unf1.csv` contains inference time benchmarks for the same CPU sweep. 
 
----
+
 
 ## Statistical Analysis & Post-Processing
 
