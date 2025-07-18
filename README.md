@@ -100,7 +100,7 @@ Run `Aggregate_Results.py` to compile final CSVs.
 6. **Statistical Analysis**  
 Run `resComparison.R` or `resultsAnalysis.ipynb` for plots and paired t-tests.
 
----
+
 
 # Compute Environments
 
