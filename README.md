@@ -140,7 +140,8 @@ Final outputs include:
 
 For questions or collaboration:  
 - CRMDS / Western Sydney University
-- SWERI / South Western Emergency Research Institute 
+- South Western Emergency Research Institute (SWERI) / Ingham Institute for Applied Medical Research
+ 
 
 ---
 
