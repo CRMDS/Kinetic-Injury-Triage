@@ -3,28 +3,27 @@
 This repository contains the full pipeline for **clinical NLP classification of kinetic injury triage notes** using Bio_ClinicalBERT.  
 It includes scripts for **pretraining, fine-tuning, prediction, hyperparameter search, and statistical analysis**, designed to run across:
 
-- **NCI Gadi Cluster (PBS + Nextflow)**  
-- **WSU HPC / Ingham system (Slurm)**  
+- **HPC (using either Slurm or PBS schedulers)**  
 - **Local machine (Python scripts only)**
 
 # Repository Structure
 
-## `Nextflow/` – NCI Gadi (PBS Pro)
+## `Nextflow/` 
 
-This folder contains **Nextflow pipeline files for large-scale job orchestration on the NCI Gadi cluster**.
+This folder contains Nextflow pipeline files, it is currently designed for the NCI Gadi system which uses the PBS scheduler but can easily be adopted for Slurm scheduler. 
 
 ### Scripts include:
 
 - `gadi_nfcore_report.sh` – collects resource usage from `work/` directory (adapted from [nf-core configs](https://nf-co.re/configs/nci_gadi/))  
 - `gadi_nf_extract_tasks.sh` – extracts job names and `.command.run` information for correlating with parameters  
 - `merge_resource_report.py` – merges resource usage with hyperparameter configurations and Nextflow trace  
-- `nextflow.config` – defines PBS Pro settings for Gadi queueing system  
+- `nextflow.config` – defines PBS Pro settings for NCI Gadi queueing system  
 - `main.nf` – Nextflow pipeline script managing the workflow stages  
-- `pbs_nf.sh` – PBS submission script to launch `main.nf` on Gadi  
+- `pbs_nf.sh` – PBS submission script to launch `main.nf` 
 
 ### Notes:
 
-- **Gadi uses PBS Pro (not Slurm).**  
+- **NCI Gadi uses PBS Pro.**  
 - Nextflow handles job orchestration, but each task is launched as a PBS job behind the scenes.  
 - **GPU and CPU usage are explicitly defined in `nextflow.config` and `.nf` files.**
 
@@ -63,9 +62,9 @@ See `Scripts/README.md` for usage.
 
 
 
-## `Slurm/` – WSU HPC / Ingham
+## `Slurm/` 
 
-This folder contains **Slurm job scripts for running the model on WSU HPC and Ingham systems**, which use Slurm (not PBS).
+This folder contains Slurm job scripts for running the model on HPCs that use Slurm job scheduler.
 
 ### Scripts include:
 
@@ -105,23 +104,11 @@ Run `Aggregate_Results.py` to compile final CSVs.
 Run `resComparison.R` or `resultsAnalysis.ipynb` for plots and paired t-tests.
 
 
-
-# Compute Environments
-
-| Environment | Job System | Use Case |
-|-------------|------------|----------|
-| **NCI Gadi** | PBS Pro + Nextflow | Large-scale job orchestration, resource tracking |
-| **WSU HPC / Ingham** | Slurm | Model training, fine-tuning, predictions |
-| **Local Machine** | Python CLI | Debugging, single-job runs |
-
-
 # Requirements
 
 - Python 3.8–3.10  
 - `transformers`, `torch`, `pandas`, `scikit-learn`, `numpy`  
 - R with `ggplot2`  
-- Nextflow + PBS Pro (for Gadi only)  
-- Slurm (for WSU HPC/Ingham)
 
 See `requirements.txt` for Python packages.
 
@@ -147,4 +134,4 @@ For questions or collaboration:
 
 # License
 
-Private repository. Academic use only.
+MIT License
