@@ -9,6 +9,10 @@ It handles the full workflow of loading models, fine-tuning, layer freezing/unfr
 
 Note: We had to modify a few things in this class to handle dynamic layer unfreezing, robust error handling for local model loading when HuggingFace servers are unavailable, and additional output features like per-epoch timing and evaluation CSVs.
 
+### Early Stopping
+
+Line 324 in `Bio_ClinicalBERTClassifier.py` should be `if val_loss < best_val - epsilon:`, where `epsilon` is a small value (e.g. 1e-4). However, to ensure reproducibility of the results in the paper, we have opted to keep the code as it is.
+
 
 ## Training, Fine-tuning, and Prediction
 
@@ -60,6 +64,11 @@ This script generates:
 - `fine_tune_results.csv`  
 - `prediction_results.csv`  
 - `fine_tune_prediction_results.csv`
+
+To run: 
+```
+python3 Aggregate_Results.py --base_directory <path/to/KIT>
+```
 
 All outputs are saved in the `Results/` directory.
 
