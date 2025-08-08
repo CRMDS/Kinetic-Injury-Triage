@@ -443,12 +443,34 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 \newpage
 
 %-------------------------------------------------------------------------------
-% SECTION 2
+% SECTION 3
 %-------------------------------------------------------------------------------
 
 
 \section{Prediction with fine-tuned models}
 
+
+The prediction results from the fine-tuned models are presented in Figure~\ref{fig:res_predict1} and Table~\ref{tab:res_prediction1}. We found that the results mirror those in Section~\ref{sec:finetune_mimic}, with the Adam and AdamW optimised models providing roughly the same accuracies and F1-scores. Like Section~\ref{sec:finetune_mimic}, the SGD optimised models, and $lr = 0.005$ perform the worst. 
+
+We found the model that provides the best accuracy and F1-score is the AdamW optimised \ac{NN3} architecture, using $lr = 0.0005$ and $dr = 0.15$ --- a similar configuration to Section~\ref{sec:finetune_mimic} --- giving an accuracy of $83.9 \pm 1.8\%$, and an F1-score of $80 \pm 2.5\%$. Similar to Section~\ref{sec:finetune_mimic}, about half of the accuracy and F1-score pairs reported exhibited a statistically significantly difference between the results at $p = 0.05$. However, as noted in Section~\ref{sec:finetune_mimic}, the practical difference for clinicians between a model producing an accuracy of 83.9\% (AdamW optimised \ac{NN3} with $lr = 0.0005$ and $dr = 0.15$) and another with an accuracy of 82.0\% (AdamW optimised \ac{NN3} with $lr = 0.0001, dr = 0.15$) is minimal. 
+
+% for accuracy: 
+% -- 76 pairs > 0.05 
+% -- 80 pairs > 0.001 
+% for f1 score: 
+% -- 71 pairs > 0.05
+% -- 78 pairs > 0.001
+
+We note that the drop in accuracy from $\sim95\%$ reported Section~\ref{sec:finetune_mimic} to $\sim84\%$ is not unexpected, as the fine-tuned model has been fine-tuned with data from one context (the \mimicData). This section then took those trained models, and tested them against the \inghamTwo data --- a fundamentally different context, as seen in Table~\ref{tab:exampleNotes}. 
+
+The total prediction time as shown in Figure~\ref{fig:res_predict1}c was similar across all configurations, which is not surprising. All fine-tuned models took between 170 and 290 seconds to predict the data set of 1000 triage notes. Hence, this task could easily be achieved on much larger datasets within medical facilities. \ac{SWSLHD} receives around half a million patients in \ac{ED} in a year, this means even with minimum computing resources the classification process will take just one day for a year's data. 
+
+Given the significant under-performance of the \ac{NN1} architecture, the SGD optimised models, and the models with a learning rate of 0.005, we did not continue further testing with these models. 
+
+
+
+
+% NN1 results
 \begin{table}[h!]
 	\caption{Prediction results on \inghamTwo using fine-tuned NN1 with the different optimisers and at different learning and drop out rates. }
 	\centering
@@ -486,7 +508,7 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 	
 \end{table}
 	
-
+% NN2 results
 \begin{table}[h!]
 	\caption{Prediction results on \inghamTwo using fine-tuned NN2 using the different optimisers and at different learning and drop out rates. }
 	\centering
@@ -524,9 +546,42 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 		
 \end{table}
 
+%% Tables of accuracy and F1 score from prediction, NN3
+\begin{table}[h!]
+\caption{Accuracy and F1-score of prediction on \inghamTwo data using the fine-tuned \ac{NN3} models. 
+The best result for each optimiser is highlighted. 
+}
+\label{tab:res_prediction1}
+\centering
+	\resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    &  \multicolumn{6}{c}{Accuracy (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Adam & $0.831 \pm 0.011$ & $0.832 \pm 0.010$ & \textbf{0.833 $\pm$ 0.012} & $0.832 \pm 0.015$ & $0.833 \pm 0.015$ & $0.826 \pm 0.021$ \\
+AdamW & $0.820 \pm 0.016$ & $0.829 \pm 0.012$ & $0.820 \pm 0.012$ & \textbf{0.839 $\pm$ 0.018} & $0.828 \pm 0.017$ & $0.830 \pm 0.015$ \\
+SGD & $0.657 \pm 0.056$ & $0.610 \pm 0.086$ & $0.671 \pm 0.051$ & $0.721 \pm 0.065$ & \textbf{0.735 $\pm $0.049} & $0.729 \pm 0.056$ \\
+    \bottomrule
+        \end{tabular}
+    }
+\vspace{2mm}
+
+	\resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    &  \multicolumn{6}{c}{F1 Score (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Adam & $0.770 \pm 0.017$ & $0.769 \pm 0.020$ & \textbf{0.776 $\pm$ 0.022} & $0.774 \pm 0.026$ & $0.774 \pm 0.023$ & $0.763 \pm 0.036$ \\
+AdamW & $0.777 \pm 0.017$ & $0.785 \pm 0.018$ & $0.773 \pm 0.018$ & \textbf{0.800 $\pm$ 0.025} & $0.788 \pm 0.020$ & $0.783 \pm 0.024$ \\
+SGD & $0.615 \pm 0.025$ & $0.609 \pm 0.019$ & $0.619 \pm 0.020$ & $0.693 \pm 0.033$ & \textbf{0.702 $\pm$ 0.025} & $0.694 \pm 0.029$ \\
+    \bottomrule
+        \end{tabular}
+    }
+
+\end{table}
 
 
-
+% Adam plots
 \begin{figure}[p] 
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthh}
@@ -550,7 +605,7 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 	\label{fig:res_prdict_adam}
 \end{figure}
 
-
+% SGD plots
 \begin{figure}[p] 
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthh}
@@ -574,11 +629,36 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 	\label{fig:res_predict_SGD}
 \end{figure}
 
+%% Plots for AdamW prediction results, step 2
+\begin{figure}[p]
+	\begin{center}
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{} 
+			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_accuracy.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_f1_score.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_PredictTimeSeconds.png}
+		\end{subfigure}
+	\end{center}
+	\caption{Results of prediction on \inghamTwo using models fine-tuned with the AdamW optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Prediction on CPU time (s). 
+	} 
+	\label{fig:res_predict1}
+\end{figure}
+
+
+
 \newpage
 
 
 %-------------------------------------------------------------------------------
-% SECTION 3
+% SECTION 4
 %-------------------------------------------------------------------------------
 
 \section{Further fine-tuning on In-House One Data}
@@ -645,6 +725,77 @@ AdamW & $111.487 \pm 32.506$ & $104.337 \pm 24.244$ & $178.830 \pm 14.122$ & $16
 	\caption{Results of further fine-tuning on \inghamOne data with the Adam optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Training time on CPU (min).
 	} 
 \end{figure}
+
+
+
+%% Plots of AdamW results, step 3
+\begin{figure}[tb]
+	\begin{center}
+		\begin{subfigure}[b]{\figwidtht}
+			\caption{} 
+			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_accuracy.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidtht}
+			\caption{}
+			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_f1_score.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidtht}
+			\caption{}
+			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_TrainingTimeMin.png}
+		\end{subfigure}
+	\end{center}
+	\caption{Results of further fine-tuning (domain adaptation) on \inghamOne data with the AdamW optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Training time on CPU (min).
+	} 
+	\label{fig:res_domainAdaptation}
+\end{figure}
+
+%% Tables for NN3 step 3 -- accuracy, F1-score, time
+\begin{table}[tb]
+\caption{Accuracy, F1-score and training time on CPU of further fine-tuning on \inghamOne data with the AdamW optimiser using \ac{NN3}. 
+The best result for each optimiser is highlighted. 
+}
+\label{tab:res_domainAdaptation}
+\centering
+	\resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    &  \multicolumn{6}{c}{Accuracy (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Adam & $0.945 \pm 0.011$ & $0.942 \pm 0.012$ & $0.940 \pm 0.009$ & $0.940 \pm 0.013$ & \textbf{0.945 $\pm$ 0.009} & $0.943 \pm 0.012$ \\
+AdamW & $0.936 \pm 0.009$ & \textbf{0.945 $\pm$ 0.017} & $0.935 \pm 0.011$ & $0.938 \pm 0.011$ & $0.937 \pm 0.012$ & $0.936 \pm 0.011$ \\
+    \bottomrule
+        \end{tabular}
+    }
+\vspace{2mm}
+
+	\resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    &  \multicolumn{6}{c}{F1 Score (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Adam & \textbf{0.940 $\pm$ 0.012} & $0.936 \pm 0.013$ & $0.934 \pm 0.010$ & $0.933 \pm 0.014$ & $0.939 \pm 0.011$ & $0.936 \pm 0.013$ \\
+AdamW & $0.930 \pm 0.010$ & \textbf{0.940 $\pm$ 0.018} & $0.929 \pm 0.012$ & $0.931 \pm 0.012$ & $0.931 \pm 0.013$ & $0.930 \pm 0.012$ \\
+    \bottomrule
+        \end{tabular}
+    }
+\vspace{2mm}
+
+	\resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    &  \multicolumn{6}{c}{Time (min) (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Adam & $207.720 \pm 45.481$ & $156.333 \pm 47.129$ & $156.617 \pm 46.909$ & $165.522 \pm 29.733$ & \textbf{96.982 $\pm$ 10.188} & $111.652 \pm 29.873$ \\
+AdamW & \textbf{96.703 $\pm$ 17.070} & $163.218 \pm 27.705$ & $160.700 \pm 26.273$ & $159.258 \pm 16.115$ & $101.602 \pm 34.954$ & $114.013 \pm 48.953$ \\
+    \bottomrule
+        \end{tabular}
+    }
+
+\end{table}
+
+
 
 
 \newpage
