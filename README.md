@@ -130,7 +130,6 @@ For questions or collaboration:
 - South Western Emergency Research Institute (SWERI) / Ingham Institute for Applied Medical Research
  
 
----
 
 # License
 
