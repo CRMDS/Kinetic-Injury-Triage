@@ -122,6 +122,8 @@ if __name__ == "__main__":
     parser.add_argument("--early_stop_patience", type=int, default=10)
     parser.add_argument("--dropout_prob", type=float, default=None)
     parser.add_argument("--save_results_path", type=str, default=None)
+    parser.add_argument("--test_split", "--val_split", type=float, default=0.2,
+                    help="Validation split fraction (0 < f < 1). Alias: --val_split. Default: 0.2")
     args = parser.parse_args()
 
     main(args)
@@ -148,8 +150,8 @@ if __name__ == "__main__":
 #   --debug \
 #   --print_every 10 \
 #   --early_stop_patience 10 \
-#   --dropout_prob 0.1
-#
+#   --dropout_prob 0.1 \
+#   --test_split 0.2
 # Note: if can't download the model from HuggingFace, you can download it manually 
 # and set the local_model_path to the directory where the model is saved. 
 # Use the --local_model_path argument to specify the local path.
