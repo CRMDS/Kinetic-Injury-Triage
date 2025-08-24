@@ -72,8 +72,11 @@ def main(args):
             debug=args.debug,
             print_every=args.print_every,
             early_stop_patience=args.early_stop_patience,
-            primary_key=args.primary_key
+            primary_key=args.primary_key,
+            val_split=args.test_split,     # add test_split
         )
+
+        
         
         print(f"\nFine tuning results for model {os.path.relpath(args.weight_file)}:")
         print(training_results)
@@ -131,6 +134,8 @@ if __name__ == "__main__":
                         help="Flag to indicate if fine-tuning should be performed")
     parser.add_argument("--predict", default=False, action="store_true",
                         help="Flag to indicate if predictions should be made")
+    parser.add_argument("--test_split", "--val_split", type=float, default=0.2,
+                    help="Validation split fraction (0 < f < 1). Alias: --val_split. Default: 0.2")
 
     args = parser.parse_args()
 
