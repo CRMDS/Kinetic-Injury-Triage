@@ -23,7 +23,9 @@ Line 324 in `Bio_ClinicalBERTClassifier.py` should be `if val_loss < best_val - 
 - Saves per-epoch metrics, confusion matrices, and model checkpoints  
 
 `finetune.py` is similar to `train.py` but designed for **secondary fine-tuning** (e.g., from MIMIC-III to Ingham data).  
-It loads existing `.pt` model weights, applies new parameters, and outputs fine-tuned weights and evaluation results. This script accepts both `test_split/val_split` as arguments while fine-tuning. 
+It loads existing `.pt` model weights, applies new parameters, and outputs fine-tuned weights and evaluation results. 
+
+Both `train.py` and `finetune.py` accepts `test_split` and `val_split` as arguments to define the dataset split ratios.
 
 `predict.py` is the **prediction and evaluation script**.  
 It loads trained or fine-tuned models and generates predictions with:
