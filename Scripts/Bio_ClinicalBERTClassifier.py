@@ -55,6 +55,7 @@ class BioClinicalBERTClassifier:
         output_path=None,       # Directory for saving outputs
         fine_tune_run=False,    # Flag for fine-tuning mode
         predict_run=False,      # Flag for prediction mode
+        val_split=0.2,          # [MOD] Default validation split for fine-tuning
     ):
         # Store initialization parameters
         self.model_name = model_name
@@ -67,6 +68,7 @@ class BioClinicalBERTClassifier:
         self.fine_tune_run = fine_tune_run
         self.predict_run = predict_run
         self.results_filename = "results_summary"
+        self.val_split = float(val_split)  # [MOD] store default split at instance level
 
         # Append suffixes to results filename depending on run mode
         if self.fine_tune_run:
@@ -574,7 +576,8 @@ class BioClinicalBERTClassifier:
         debug=True,
         print_every=10,
         early_stop_patience=10,
-        primary_key=None
+        primary_key=None,
+        val_split=None,           # [MOD] per-call override for validation split
     ):
         """
         Load pretrained weights, run full training loop for further fine-tuning, and save fine-tuned model.
@@ -582,11 +585,14 @@ class BioClinicalBERTClassifier:
         # Load initial model weights
         self.load_model(model_wt_path)
 
+        # [MOD] Use per-call override if provided, else instance default
+        split = self.val_split if val_split is None else float(val_split)
+
         # Execute training epochs
         res = self._run_train_epoch(
             dataset,
             num_epochs=num_epochs,
-            test_split=0.2,        # TODO: make this configurable
+            test_split=split,        # [MOD] was hard-coded 0.2
             early_stop_patience=early_stop_patience,
             text_column=text_column,
             label_column=label_column,
