@@ -3,6 +3,12 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
 \usepackage{booktabs}%
 \usepackage{xspace}
 \usepackage{orcidlink}  % prettier orcid links
@@ -100,15 +106,31 @@ X. Rosalind Wang\orcidlink{0000-0001-5454-6197}}
 \maketitle
 
 %-------------------------------------------------------------------------------
-% SECTION 1
+% SECTION 
 %-------------------------------------------------------------------------------
-\section{Data and Preprocessing}
+\section{Introduction}
 
+This is the Supplementary Material for the paper ``Classification of kinetic-related injury in hospital triage data using NLP'', as published in the Proceedings of The 21st International Conference on Advanced Data Mining and Applications, 2025 (ADMA 2025).
+
+This Supplementary Material is organised as follows: Firstly, provides additional information on the data and preprocessing (Section~\ref{sec:data}). Secondly, detailed results of fine-tuning the model (Step 1 as described in the main paper, Section~\ref{sec:fineTune}), prediction using the fine-tuned models (Step 2, Section~\ref{sec:pred1}), domain adaptation (Step 3, Section~\ref{sec:domainAdaptation}), and prediction using the domain-adapted models (Step 4, Section~\ref{sec:pred2}). Finally, we provide results on the computing resources used with different number of CPUs (Section~\ref{sec:runtime}).
+
+The three fine-tuning strategies for the \ac{NN} used in this work are: 
+\begin{enumerate}
+    \item \textbf{\acf{NN1}} --- The weights from the \ac{BCB} were used \emph{as is} (frozen) and the fine-tuning was used to optimise the \ac{CH} parameters only. 
+    \item \textbf{\acf{NN2}} --- All but the last layer of the \ac{BCB} were frozen, and the fine-tuning process was used to optimise the weights of the \ac{CH} and the final encoder layer (layer 12). 
+    \item \textbf{\acf{NN3}} --- Fine-tuning to optimise the weights for layers 11 and 12 of the \ac{BCB} and the \ac{CH}. 
+\end{enumerate}
+
+%-------------------------------------------------------------------------------
+% SECTION 
+%-------------------------------------------------------------------------------
+
+\section{Data and Preprocessing}
+\label{sec:data}
 
 We used data from two sources: \ac{MIMIC}-III and \cedric: 
 
-
-\subsection{\ac{MIMIC}-III data}
+\subsection{MIMIC-III data}
 
 The \mimic Clinical Database~\cite{johnson2016mimic3db}, publicly available through PhysioNet\footnote{a research resource founded in 1999 under the \ac{NIH}}~\cite{goldberger2000physiobank} provides free access to extensive physiological and clinical data alongside open-source software. The data comprises observations with presenting problems of over 40,000 critical care patients at the Beth Israel Deaconess Medical Center, Boston, Massachusetts \ac{ED}, between 2001 and 2012. 
 We used the data collected from the critical care unit, specifically the table \texttt{NOTEEVENTS} that contains various de-identified clinical notes, for this paper. These data contains over two million samples of clinical notes, medical reports and discharge summaries, and is the same data set that the \ac{BCB} was originally trained on~\cite{alsentzer2019publicly}. 
@@ -129,7 +151,7 @@ These samples also underwent manual review, where 176 were identified as possibl
 Therefore, we created a dataset of 1309 positive kinetic-related vehicular injury cases and 1132 negative cases. 
 
     
-\begin{table}[bt]
+\begin{table}[btp]
     \caption{Example of synthetic ICU (top) and triage (bottom) clinical notes for kinetic-related vehicular trauma cases (+ve label) and otherwise (-ve label). The corresponding rows in the tables show the exact same case, as would have been written by the two different departments. }
     \label{tab:exampleNotes}
     
@@ -138,10 +160,10 @@ Therefore, we created a dataset of 1309 positive kinetic-related vehicular injur
     \textbf{Label} & 
     \multicolumn{1}{c}{\textbf{Example ICU clinical notes (similar to \mimicData)}} \\
     \midrule
-    +ve & \scriptsize X, a 36-year-old marketing executive, was brought to the emergency department at 7:45 PM following a collision with a power pole while riding her electric bike. Witnesses reported she was travelling at approximately 30 km/h when she swerved to avoid a pedestrian and struck the pole chest-first. Upon arrival, she was conscious and oriented but visibly distressed, with vital signs showing tachycardia (HR 118), tachypnoea (RR 24), normal blood pressure (BP 112/74), and oxygen saturation of 97\% on room air. She complained of severe central chest pain radiating to her back, rating it 8/10, which worsened with inspiration. Primary survey revealed intact airway and breathing with no obvious external chest injuries, though auscultation noted muffled heart sounds. She was immediately transferred to the resuscitation bay where an eFAST scan revealed a significant pericardial effusion suggestive of cardiac tamponade. Urgent CT confirmed a moderate-sized pericardial effusion (2.3cm) with associated findings of cardiac compression. No aortic injury was identified, but a small right haemothorax was noted.  
+    +ve & \footnotesize X, a 36-year-old marketing executive, was brought to the emergency department at 7:45 PM following a collision with a power pole while riding her electric bike. Witnesses reported she was travelling at approximately 30 km/h when she swerved to avoid a pedestrian and struck the pole chest-first. Upon arrival, she was conscious and oriented but visibly distressed, with vital signs showing tachycardia (HR 118), tachypnoea (RR 24), normal blood pressure (BP 112/74), and oxygen saturation of 97\% on room air. She complained of severe central chest pain radiating to her back, rating it 8/10, which worsened with inspiration. Primary survey revealed intact airway and breathing with no obvious external chest injuries, though auscultation noted muffled heart sounds. She was immediately transferred to the resuscitation bay where an eFAST scan revealed a significant pericardial effusion suggestive of cardiac tamponade. Urgent CT confirmed a moderate-sized pericardial effusion (2.3cm) with associated findings of cardiac compression. No aortic injury was identified, but a small right haemothorax was noted.  
     \par
     Upon return to the resuscitation bay,  \ldots\\
-    -ve & \scriptsize An 80-year-old man, Mr. X, presented to the emergency department at 7:30 PM with confusion, fever, and severe lower abdominal pain. His daughter reported that he had been increasingly lethargic over the past 48 hours, with decreased oral intake and had become confused this evening. She noted he had complained of burning during urination for approximately three days but had refused to see his doctor.
+    -ve & \footnotesize An 80-year-old man, Mr. X, presented to the emergency department at 7:30 PM with confusion, fever, and severe lower abdominal pain. His daughter reported that he had been increasingly lethargic over the past 48 hours, with decreased oral intake and had become confused this evening. She noted he had complained of burning during urination for approximately three days but had refused to see his doctor.
     \par
     On examination, Mr. X was disoriented (Glasgow Coma Scale 13/15), febrile (temperature 39.2$^{\circ}C$), tachycardic (heart rate 118 bpm), hypotensive (BP 82/45 mmHg), and tachypnoeic (respiratory rate 28/min). He appeared pale and diaphoretic with delayed capillary refill of 4 seconds. His oxygen saturation was 94\% on room air.
     \par 
@@ -156,11 +178,11 @@ Therefore, we created a dataset of 1309 positive kinetic-related vehicular injur
     \textbf{Label} & 
     \multicolumn{1}{c}{\textbf{Example triage notes (similar to \cedric Data)}} \\
     \midrule
-    +ve & \scriptsize 36yo female presents post electric bike vs. power pole collision approx. 30 minutes ago. Alert but anxious, reports severe central chest pain 8/10, worse on inspiration. Denies LOC at scene. No helmet worn. O/E RR 24, SpO2 97\% RA, HR 118, BP 112/74, Temp 36.7°C. Skin clammy. No visible chest wall deformity but reporting pain on palpation of sternum. Multiple abrasions to right arm and leg. Known allergies to penicillin (rash). Not pregnant. No regular medications. \\
-    -ve & \scriptsize 88yo man brought in by family, c/o abdominal pain, fever and suprapubic pain. Daughter also states that her father has been complaining for burning when he passes urine. PMHx of prostatism, hypertension, and T2DM. O/E Pale and sweaty, RR 28, SpO2 94\% RA, temp 39.2$^{\circ}$C, HR 118 bpm, BP 82/45, GCS 13/15. Confused and disorientated in time, place and person.   \\
+    +ve & \footnotesize 36yo female presents post electric bike vs. power pole collision approx. 30 minutes ago. Alert but anxious, reports severe central chest pain 8/10, worse on inspiration. Denies LOC at scene. No helmet worn. O/E RR 24, SpO2 97\% RA, HR 118, BP 112/74, Temp 36.7°C. Skin clammy. No visible chest wall deformity but reporting pain on palpation of sternum. Multiple abrasions to right arm and leg. Known allergies to penicillin (rash). Not pregnant. No regular medications. \\
+    -ve & \footnotesize 88yo man brought in by family, c/o abdominal pain, fever and suprapubic pain. Daughter also states that her father has been complaining for burning when he passes urine. PMHx of prostatism, hypertension, and T2DM. O/E Pale and sweaty, RR 28, SpO2 94\% RA, temp 39.2$^{\circ}$C, HR 118 bpm, BP 82/45, GCS 13/15. Confused and disorientated in time, place and person.   \\
     \bottomrule
     \end{tabular}
-\vspace{-6mm}
+%\vspace{-6mm}
 \end{table}
 
 
@@ -172,20 +194,18 @@ Therefore, we created a dataset of 1309 positive kinetic-related vehicular injur
     \toprule
     \textbf{Label} & \textbf{Terms used in \texttt{regex} text matching} \\
     \midrule
-    Vehicle & \scriptsize mva, mba, vehicle, bus, pedestrian, passenger, ute, ped, bike, dirtbike, motorbike, pushbike, scooter, truck, bicycle, motorcycle, driver, driving, rtc, rta, \verb|\d*km[a-zA-Z/]*|, skateboard, surfing, surf, horse, collision, crossing, buggy, ebike, jetski, vs car, car vs, car accident, moving car, traffic light, traffic lights, hit by car, hit by a car, car hit, airbag, airbags, T boned, reversed, struck by car, struck by a car, tyre \\
-    Trauma & \scriptsize \verb|(?<!nil )|trauma, \verb|(?<!nil )|injury, \verb|(?<!nil )|injured, \verb|(?<!nil )|injuries, strain, rupture, sprain, fracture, dislocation, damage, contusion, tear, assault, accident, homicide, blast, split, bruised, laceration, concussion, lac, crush, broken, fall, fallen, \# \\
+    Vehicle & \footnotesize mva, mba, vehicle, bus, pedestrian, passenger, ute, ped, bike, dirtbike, motorbike, pushbike, scooter, truck, bicycle, motorcycle, driver, driving, rtc, rta, \verb|\d*km[a-zA-Z/]*|, skateboard, surfing, surf, horse, collision, crossing, buggy, ebike, jetski, vs car, car vs, car accident, moving car, traffic light, traffic lights, hit by car, hit by a car, car hit, airbag, airbags, T boned, reversed, struck by car, struck by a car, tyre \\
+    Trauma & \footnotesize \verb|(?<!nil )|trauma, \verb|(?<!nil )|injury, \verb|(?<!nil )|injured, \verb|(?<!nil )|injuries, strain, rupture, sprain, fracture, dislocation, damage, contusion, tear, assault, accident, homicide, blast, split, bruised, laceration, concussion, lac, crush, broken, fall, fallen, \# \\
     \bottomrule
     \end{tabular}
-\vspace{-6mm}
+%\vspace{-6mm}
 \end{table}
 
 
 
 \subsection{\cedric data}
 
-%% -- Info below redacted for review purpose. 
-\acf{CEDRIC} database is held at \ac{SWERI} within the Ingham Institute of Applied Medical Research, 
-%\footnote{\url{https://sweri.com.au/}}
+\acf{CEDRIC} database is held at \ac{SWERI} within the Ingham Institute of Applied Medical Research~\footnote{\url{https://sweri.com.au/}}
 %\footnote{\url{https://inghaminstitute.org.au}}
 it captures and links data from 
 \ac{ED} presentations in \ac{SWSLHD}\footnote{Comprised of: Bankstown-Lidcombe, Bowral, Camden and Campbelltown, Fairfield, and Liverpool Hospitals.} 
@@ -202,23 +222,21 @@ We thus created two data sets:
 
 
 
-
-
 %-------------------------------------------------------------------------------
-% SECTION 2
+% SECTION 
 %-------------------------------------------------------------------------------
-
 
 \section{Fine-tuning on MIMIC data}
+\label{sec:fineTune}
 
-The results after fine-tuning the \ac{BCBC} configurations using the \ac{NN1}, \ac{NN2}, and \ac{NN3} fine-tuning strategies for the AdamW optimiser are presented in Figure~\ref{fig:res_training}, with Figure~\ref{fig:res_training}a. showing the accuracy, Figure~\ref{fig:res_training}b. showing the F1-Score, and Figure~\ref{fig:res_training}c. showing the total training time. Tables~\ref{tab:res_train_accuracy}, \ref{tab:res_train_f1score}, and \ref{tab:res_train_time} demonstrate the training accuracy, F1-score, and total training time (min) respectively for the \ac{NN3} architecture\footnote{Plots for \ac{NN1} and \ac{NN2} are presented in Supplementary Materials, which is in the GitHub repository, but omitted here for brevity given the overall results plotted in Figure~\ref{fig:res_training} and the similarity between \ac{NN} architectures. Similarly, tables for Adam and SGD optimisers are also in Supplementary Materials}. 
+The results after fine-tuning the \ac{BCBC} configurations using the \ac{NN1}, \ac{NN2}, and \ac{NN3} fine-tuning strategies for the AdamW optimiser are presented in Figure~\ref{fig:res_training_adamW}, and for the Adam and SGD optimisers in Figures~\ref{fig:res_training_adam} and \ref{fig:res_training_SGD} respectively. Each figure contains three sub-figures, with (a) showing the accuracy, (b) the F1-Score, and (c) the total training time in minutes.  The results are also presented in tabular form for \ac{NN1} (Table~\ref{tab:res_training_nn1}), \ac{NN2} (Table~\ref{tab:res_training_nn2}), and \ac{NN3} (Table~\ref{tab:res_training_nn3}).
 
-Figure~\ref{fig:res_training} demonstrates the different error metrics tested across each \ac{NN} architecture. We found that most learning/dropout rate combinations provided similar 
-results, with the exception of the \ac{NN3} configuration using $lr = 0.005$, which had a significantly worse accuracy and F1-score. Excluding the models optimised using SGD, and the largest learning rate ($lr = 0.005$), the \ac{NN1} architecture performed worst across all metrics, with \ac{NN2} and \ac{NN3} performing similarly. We found that \ac{NN3} architecture, using the Adam optimiser with $lr = 0.0001$ and $dr = 0.15$ provided the best error metrics (accuracy of $95.0 \pm 0.9 \%$, and F1-score of $95.4 \pm 0.8\%$). However, this was at the expense of training time, as the AdamW optimiser was consistently quicker, with training times generally taking between a third and half as long as the Adam optimiser (Table~\ref{tab:res_train_time}), for marginally worse accuracy and F1-score. 
+Figures~\ref{fig:res_training_adamW}--\ref{fig:res_training_SGD} demonstrate the different error metrics tested across each \ac{NN} architecture. We found that most learning/dropout rate combinations provided similar 
+results, with the exception of the \ac{NN3} configuration using $lr = 0.005$, which had a significantly worse accuracy and F1-score. Excluding the models optimised using SGD, and the largest learning rate ($lr = 0.005$), the \ac{NN1} architecture performed worst across all metrics, with \ac{NN2} and \ac{NN3} performing similarly. We found that \ac{NN3} architecture, using the Adam optimiser with $lr = 0.0001$ and $dr = 0.15$ provided the best error metrics (accuracy of $95.0 \pm 0.9 \%$, and F1-score of $95.4 \pm 0.8\%$). However, this was at the expense of training time, as the AdamW optimiser was consistently quicker, with training times generally taking between a third and half as long as the Adam optimiser (Table~\ref{tab:res_training_nn3}, bottom), for marginally worse accuracy and F1-score. 
 
 
-We performed a two-sampled t-test ($N=10$ for the number of repetitions of each model configurations trained) of all pairs of results in Tables~\ref{tab:res_train_accuracy} and \ref{tab:res_train_f1score} ten times. We observed that about half of the more than 300 pairs had statistically significant differences between the results at $p = 0.05$. The distinction between significant and non-significant difference was subtle --- e.g.\ $0.945 \pm 0.008$ vs.\ $0.933 \pm 0.010$ was not significant, while $0.947 \pm 0.013$ vs.\ $0.933 \pm 0.010$ was significant at $p = 0.05$. 
-However, in a practical sense, there was no real difference between accuracies of $95.0 \pm 0.9\%$ (the best Adam configuration) and $94.2 \pm 1.2\%$ (the worst AdamW configuration, shown in Table~\ref{tab:res_train_accuracy}.) even though they were statistically significantly different. 
+We performed a two-sampled t-test ($N=10$ for the number of repetitions of each model configurations trained) of all pairs of results for accuracy and F1-score in Tables~\ref{tab:res_training_nn1}-\ref{tab:res_training_nn3} ten times. We observed that about half of the more than 300 pairs had statistically significant differences between the results at $p = 0.05$. The distinction between significant and non-significant difference was subtle --- e.g.\ $0.945 \pm 0.008$ vs.\ $0.933 \pm 0.010$ was not significant, while $0.947 \pm 0.013$ vs.\ $0.933 \pm 0.010$ was significant at $p = 0.05$. 
+However, in a practical sense, there was no real difference between accuracies of $95.0 \pm 0.9\%$ (the best Adam configuration) and $94.2 \pm 1.2\%$ (the worst AdamW configuration, shown in Table~\ref{tab:res_training_nn3}(top)) even though they were statistically significantly different. 
 
 
 % Results using NN1
@@ -226,6 +244,7 @@ However, in a practical sense, there was no real difference between accuracies o
 	\caption{
 	Accuracy, F1-score and training time on GPU of fine-tuning on MIMIC data with the different optimiser using NN1, 
 	and at different learning and drop out rates.}
+	\label{tab:res_training_nn1}
 	\centering
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
@@ -268,6 +287,7 @@ However, in a practical sense, there was no real difference between accuracies o
 \begin{table}[h!]
 	\caption{Accuracy, F1-score and training time on GPU of fine-tuning on MIMIC data with the different optimiser using NN2, 
 	and at different learning and drop out rates.}
+	\label{tab:res_training_nn2}
 	\centering
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
@@ -310,7 +330,7 @@ However, in a practical sense, there was no real difference between accuracies o
 \begin{table}[h!]
   \centering
   \caption{Results of fine-tuning \ac{NN3} using the different optimisers and at different hyperparameters. The best result for each optimiser is highlighted.} %For AdamW, the highlighted value has higher accuracy and F1-score in the fourth decimal place.}
-  \label{tab:res_training}
+  \label{tab:res_training_nn3}
   \begin{subtable}[t]{\textwidth}
     \centering
     \label{tab:res_train_accuracy}
@@ -363,7 +383,7 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 
 
 %% Plots of AdamW results 
-\begin{figure}[p] 
+\begin{figure}[tbp] 
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthh}
 			\caption{} 
@@ -382,11 +402,11 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 	\end{center}
 	\caption{Results of fine-tuning using the AdamW optimiser: (a) Accuracy of the validation data; (b) F-1 score on the validation data; (c) training time. 
 	} 
-	\label{fig:res_training}
+	\label{fig:res_training_adamW}
 \end{figure}
 
 % Plots of Adam results
-\begin{figure}[p] 
+\begin{figure}[tbp] 
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthh}
 			\caption{} 
@@ -409,7 +429,7 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 \end{figure}
 
 % Plots of SGD results
-\begin{figure}[p] 
+\begin{figure}[tbp] 
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthh}
 			\caption{} 
@@ -448,11 +468,11 @@ SGD & $100.635 \pm 44.524$ & $100.660 \pm 44.502$ & $109.112 \pm 45.218$ & \text
 
 
 \section{Prediction with fine-tuned models}
+\label{sec:pred1}
 
+The prediction results from the fine-tuned models are presented in Figures~\ref{fig:res_predict_adamW}-\ref{fig:res_prdict_adam} and Tables~\ref{tab:res_predict_nn1}-\ref{tab:res_predict_nn3}. We found that the results mirror those in Section~\ref{sec:fineTune}, with the Adam and AdamW optimised models providing roughly the same accuracies and F1-scores. Like Section~\ref{sec:fineTune}, the SGD optimised models, and $lr = 0.005$ perform the worst. 
 
-The prediction results from the fine-tuned models are presented in Figure~\ref{fig:res_predict1} and Table~\ref{tab:res_prediction1}. We found that the results mirror those in Section~\ref{sec:finetune_mimic}, with the Adam and AdamW optimised models providing roughly the same accuracies and F1-scores. Like Section~\ref{sec:finetune_mimic}, the SGD optimised models, and $lr = 0.005$ perform the worst. 
-
-We found the model that provides the best accuracy and F1-score is the AdamW optimised \ac{NN3} architecture, using $lr = 0.0005$ and $dr = 0.15$ --- a similar configuration to Section~\ref{sec:finetune_mimic} --- giving an accuracy of $83.9 \pm 1.8\%$, and an F1-score of $80 \pm 2.5\%$. Similar to Section~\ref{sec:finetune_mimic}, about half of the accuracy and F1-score pairs reported exhibited a statistically significantly difference between the results at $p = 0.05$. However, as noted in Section~\ref{sec:finetune_mimic}, the practical difference for clinicians between a model producing an accuracy of 83.9\% (AdamW optimised \ac{NN3} with $lr = 0.0005$ and $dr = 0.15$) and another with an accuracy of 82.0\% (AdamW optimised \ac{NN3} with $lr = 0.0001, dr = 0.15$) is minimal. 
+We found the model that provides the best accuracy and F1-score is the AdamW optimised \ac{NN3} architecture, using $lr = 0.0005$ and $dr = 0.15$ --- a similar configuration to Section~\ref{sec:fineTune} --- giving an accuracy of $83.9 \pm 1.8\%$, and an F1-score of $80 \pm 2.5\%$. Similar to Section~\ref{sec:fineTune}, about half of the accuracy and F1-score pairs reported exhibited a statistically significantly difference between the results at $p = 0.05$. However, as noted in Section~\ref{sec:fineTune}, the practical difference for clinicians between a model producing an accuracy of 83.9\% (AdamW optimised \ac{NN3} with $lr = 0.0005$ and $dr = 0.15$) and another with an accuracy of 82.0\% (AdamW optimised \ac{NN3} with $lr = 0.0001, dr = 0.15$) is minimal. 
 
 % for accuracy: 
 % -- 76 pairs > 0.05 
@@ -461,9 +481,9 @@ We found the model that provides the best accuracy and F1-score is the AdamW opt
 % -- 71 pairs > 0.05
 % -- 78 pairs > 0.001
 
-We note that the drop in accuracy from $\sim95\%$ reported Section~\ref{sec:finetune_mimic} to $\sim84\%$ is not unexpected, as the fine-tuned model has been fine-tuned with data from one context (the \mimicData). This section then took those trained models, and tested them against the \inghamTwo data --- a fundamentally different context, as seen in Table~\ref{tab:exampleNotes}. 
+We note that the drop in accuracy from $\sim95\%$ reported Section~\ref{sec:fineTune} to $\sim84\%$ is not unexpected, as the fine-tuned model has been fine-tuned with data from one context (the \mimicData). This section then took those trained models, and tested them against the \inghamTwo data --- a fundamentally different context, as seen in Table~\ref{tab:exampleNotes}. 
 
-The total prediction time as shown in Figure~\ref{fig:res_predict1}c was similar across all configurations, which is not surprising. All fine-tuned models took between 170 and 290 seconds to predict the data set of 1000 triage notes. Hence, this task could easily be achieved on much larger datasets within medical facilities. \ac{SWSLHD} receives around half a million patients in \ac{ED} in a year, this means even with minimum computing resources the classification process will take just one day for a year's data. 
+The total prediction time as shown in subfigure (c) of Figure~\ref{fig:res_predict_adamW}-\ref{fig:res_predict_SGD} was similar across all configurations, which is not surprising. All fine-tuned models took between 170 and 290 seconds to predict the data set of 1000 triage notes. Hence, this task could easily be achieved on much larger datasets within medical facilities. \ac{SWSLHD} receives around half a million patients in \ac{ED} in a year, this means even with minimum computing resources the classification process will take just one day for a year's data. 
 
 Given the significant under-performance of the \ac{NN1} architecture, the SGD optimised models, and the models with a learning rate of 0.005, we did not continue further testing with these models. 
 
@@ -473,6 +493,7 @@ Given the significant under-performance of the \ac{NN1} architecture, the SGD op
 % NN1 results
 \begin{table}[h!]
 	\caption{Prediction results on \inghamTwo using fine-tuned NN1 with the different optimisers and at different learning and drop out rates. }
+	\label{tab:res_predict_nn1}
 	\centering
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
@@ -511,6 +532,7 @@ Given the significant under-performance of the \ac{NN1} architecture, the SGD op
 % NN2 results
 \begin{table}[h!]
 	\caption{Prediction results on \inghamTwo using fine-tuned NN2 using the different optimisers and at different learning and drop out rates. }
+	\label{tab:res_predict_nn2}
 	\centering
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
@@ -551,7 +573,7 @@ Given the significant under-performance of the \ac{NN1} architecture, the SGD op
 \caption{Accuracy and F1-score of prediction on \inghamTwo data using the fine-tuned \ac{NN3} models. 
 The best result for each optimiser is highlighted. 
 }
-\label{tab:res_prediction1}
+\label{tab:res_predict_nn3}
 \centering
 	\resizebox{\textwidth}{!}{%
     \begin{tabular}{@{}lcccccc@{}}
@@ -580,6 +602,29 @@ SGD & $0.615 \pm 0.025$ & $0.609 \pm 0.019$ & $0.619 \pm 0.020$ & $0.693 \pm 0.0
 
 \end{table}
 
+
+%% Plots for AdamW prediction results, step 2
+\begin{figure}[p]
+	\begin{center}
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{} 
+			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_accuracy.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_f1_score.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_PredictTimeSeconds.png}
+		\end{subfigure}
+	\end{center}
+	\caption{Results of prediction on \inghamTwo using models fine-tuned with the AdamW optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Prediction on CPU time (s). 
+	} 
+	\label{fig:res_predict_adamW}
+\end{figure}
 
 % Adam plots
 \begin{figure}[p] 
@@ -629,45 +674,34 @@ SGD & $0.615 \pm 0.025$ & $0.609 \pm 0.019$ & $0.619 \pm 0.020$ & $0.693 \pm 0.0
 	\label{fig:res_predict_SGD}
 \end{figure}
 
-%% Plots for AdamW prediction results, step 2
-\begin{figure}[p]
-	\begin{center}
-		\begin{subfigure}[b]{\figwidthh}
-			\caption{} 
-			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_accuracy.png}
-		\end{subfigure}
-        \hfill
-		\begin{subfigure}[b]{\figwidthh}
-			\caption{}
-			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_f1_score.png}
-		\end{subfigure}
-        \hfill
-		\begin{subfigure}[b]{\figwidthh}
-			\caption{}
-			\includegraphics[width=\textwidth]{prediction_AdamW_optimiser_PredictTimeSeconds.png}
-		\end{subfigure}
-	\end{center}
-	\caption{Results of prediction on \inghamTwo using models fine-tuned with the AdamW optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Prediction on CPU time (s). 
-	} 
-	\label{fig:res_predict1}
-\end{figure}
 
-
-
-\newpage
+\clearpage
+\newpage	
 
 
 %-------------------------------------------------------------------------------
-% SECTION 4
+% SECTION
 %-------------------------------------------------------------------------------
 
-\section{Further fine-tuning on In-House One Data}
+\section{Further fine-tuning on \inghamOne Data}
+\label{sec:domainAdaptation}
 
-	
+The tabulated results of the models fine-tuned (domain adapted) on \inghamOne data are shown in Tables~\ref{tab:res_domainAdaptation_nn2} and \ref{tab:res_domainAdaptation_nn3}. The results are also plotted in Figures~\ref{fig:res_domainAdaptation_adam} and \ref{fig:res_domainAdaptation_adamW} for models fine-tuned with the Adam and AdamW optimisers respectively.
+
+Similar to Sections~\ref{sec:fineTune} and \ref{sec:pred1}, 
+we found the Adam optimised models provided the best overall performance with the best accuracy (using $lr = 0.0005, dr = 0.2$, gave an accuracy of $94.5 \pm 0.9 \%$) and F1-score (using $lr = 0.0001, dr = 0.15$, and gave an F1-score of $94.0 \pm 1.2\%$). We note that this configuration provided the equal best average accuracy, however had a larger standard deviation than the other model identified. 
+
+Unlike the previous sections, all pairs of results reported were \emph{not} statistically significantly different from each other (at $p=0.05$). Once again, however, the practical difference between an accuracy of 94.5\% (the best performing model overall) and 93.5\% (the worst performing model) is not significant. 
+
+The fine-tuning time on the CPU was higher, as expected. Given the exact same model configuration and data, fine-tuning would have taken only a small percentage of the time on the GPU facility. 
+However, since the total training time was less than three hours on a CPU with limited RAM, the model was well within the realm of feasibility for adaptation in any medical facilities.
+
+% NN2 results	
 \begin{table}[h!]
 	\caption{Accuracy, F1-score and training time on CPU of further fine-tuning (domain adaptation) on \inghamOne data with the different optimiser using NN2, 
 	and at different learning and drop out rates.
 	}
+	\label{tab:res_domainAdaptation_nn2}
 	\centering
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
@@ -677,10 +711,10 @@ SGD & $0.615 \pm 0.025$ & $0.609 \pm 0.019$ & $0.619 \pm 0.020$ & $0.693 \pm 0.0
 	Adam & $0.936 \pm 0.008$ & $0.929 \pm 0.012$ & $0.928 \pm 0.011$ & $0.938 \pm 0.009$ & $0.943 \pm 0.011$ & $0.940 \pm 0.009$ \\
 	AdamW & $0.923 \pm 0.011$ & $0.932 \pm 0.015$ & $0.922 \pm 0.013$ & $0.934 \pm 0.013$ & $0.941 \pm 0.013$ & $0.934 \pm 0.006$ \\
 		\bottomrule
-			\end{tabular}
+		\end{tabular}
 		}
-	
-	\vspace{5mm}
+
+	\vspace{2mm}
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
 		\toprule
@@ -691,7 +725,8 @@ SGD & $0.615 \pm 0.025$ & $0.609 \pm 0.019$ & $0.619 \pm 0.020$ & $0.693 \pm 0.0
 		\bottomrule
 			\end{tabular}
 		}
-	\vspace{5mm}
+
+	\vspace{2mm}
 	\resizebox{\textwidth}{!}{%
 	\begin{tabular}{@{}lcccccc@{}}
 	\toprule
@@ -703,60 +738,13 @@ AdamW & $111.487 \pm 32.506$ & $104.337 \pm 24.244$ & $178.830 \pm 14.122$ & $16
 		\end{tabular}
 	}
 	\end{table}
-	
-	
-\begin{figure}[h!]
-	\begin{center}
-		\begin{subfigure}[b]{\figwidthhh}
-			\caption{} 
-			\includegraphics[width=\textwidth]{finetuning_Adam_optimiser_accuracy.png}
-		\end{subfigure}
-        \hfill
-		\begin{subfigure}[b]{\figwidthhh}
-			\caption{}
-			\includegraphics[width=\textwidth]{finetuning_Adam_optimiser_f1_score.png}
-		\end{subfigure}
-        \hfill
-		\begin{subfigure}[b]{\figwidthhh}
-			\caption{}
-			\includegraphics[width=\textwidth]{finetuning_Adam_optimiser_TrainingTimeMin.png}
-		\end{subfigure}
-	\end{center}                                                                
-	\caption{Results of further fine-tuning on \inghamOne data with the Adam optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Training time on CPU (min).
-	} 
-\end{figure}
-
-
-
-%% Plots of AdamW results, step 3
-\begin{figure}[tb]
-	\begin{center}
-		\begin{subfigure}[b]{\figwidtht}
-			\caption{} 
-			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_accuracy.png}
-		\end{subfigure}
-        \hfill
-		\begin{subfigure}[b]{\figwidtht}
-			\caption{}
-			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_f1_score.png}
-		\end{subfigure}
-        \hfill
-		\begin{subfigure}[b]{\figwidtht}
-			\caption{}
-			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_TrainingTimeMin.png}
-		\end{subfigure}
-	\end{center}
-	\caption{Results of further fine-tuning (domain adaptation) on \inghamOne data with the AdamW optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Training time on CPU (min).
-	} 
-	\label{fig:res_domainAdaptation}
-\end{figure}
 
 %% Tables for NN3 step 3 -- accuracy, F1-score, time
-\begin{table}[tb]
+\begin{table}[h!]
 \caption{Accuracy, F1-score and training time on CPU of further fine-tuning on \inghamOne data with the AdamW optimiser using \ac{NN3}. 
 The best result for each optimiser is highlighted. 
 }
-\label{tab:res_domainAdaptation}
+\label{tab:res_domainAdaptation_nn3}
 \centering
 	\resizebox{\textwidth}{!}{%
     \begin{tabular}{@{}lcccccc@{}}
@@ -794,22 +782,74 @@ AdamW & \textbf{96.703 $\pm$ 17.070} & $163.218 \pm 27.705$ & $160.700 \pm 26.27
     }
 
 \end{table}
+	
+
+% Adam plots	
+\begin{figure}[h!]
+	\begin{center}
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{} 
+			\includegraphics[width=\textwidth]{finetuning_Adam_optimiser_accuracy.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{finetuning_Adam_optimiser_f1_score.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{finetuning_Adam_optimiser_TrainingTimeMin.png}
+		\end{subfigure}
+	\end{center}                                                                
+	\caption{Results of further fine-tuning on \inghamOne data with the Adam optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Training time on CPU (min).
+	} 
+	\label{fig:res_domainAdaptation_adam}
+\end{figure}
 
 
 
+%% Plots of AdamW results, step 3
+\begin{figure}[ht]
+	\begin{center}
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{} 
+			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_accuracy.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_f1_score.png}
+		\end{subfigure}
+        \hfill
+		\begin{subfigure}[b]{\figwidthh}
+			\caption{}
+			\includegraphics[width=\textwidth]{finetuning_AdamW_optimiser_TrainingTimeMin.png}
+		\end{subfigure}
+	\end{center}
+	\caption{Results of further fine-tuning (domain adaptation) on \inghamOne data with the AdamW optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Training time on CPU (min).
+	} 
+	\label{fig:res_domainAdaptation_adamW}
+\end{figure}
 
+
+
+\clearpage
 \newpage
 %-------------------------------------------------------------------------------
-% SECTION 4
+% SECTION 
 %-------------------------------------------------------------------------------
 
-
 \section{Prediction with domain adapted models}
+\label{sec:pred2}
+
+Results for prediction on \inghamTwo data using the \ac{NN2} model further fine-tuned (domain adapted) on \inghamOne data are shown in Table~\ref{tab:res_finetune_predict_nn2}. The plots of models fine-tuned with the Adam optimiser are shown in Figure~\ref{fig:res_finetune_predict_adam}. The other results are presented in the main paper. 
 
 \begin{table}[h!]
 	\caption{Accuracy, F1-score and training time on CPU of further fine-tuning (domain adaptation) on \inghamOne data with the different optimiser using NN2, 
 	and at different learning and drop out rates.
 	}
+	\label{tab:res_finetune_predict_nn2}
 	\centering
 		\resizebox{\textwidth}{!}{%
 		\begin{tabular}{@{}lcccccc@{}}
@@ -855,6 +895,7 @@ AdamW & \textbf{96.703 $\pm$ 17.070} & $163.218 \pm 27.705$ & $160.700 \pm 26.27
 	\end{center}
 	\caption{Results of prediction on \inghamTwo data with the domain adapted models optimised with Adam optimiser: (a) Prediction accuracy; (b) F-1 score; (c) Time taken on CPU (s)
 	} 
+	\label{fig:res_finetune_predict_adam}
 \end{figure}
 
 
@@ -863,6 +904,7 @@ AdamW & \textbf{96.703 $\pm$ 17.070} & $163.218 \pm 27.705$ & $160.700 \pm 26.27
 % SECTION 5
 %-------------------------------------------------------------------------------
 \section{Run time on different number of CPUs}
+\label{sec:runtime}
 
 We ran the further fine-tuning step using AdamW optimiser with 0.0001 learning rate and 0.15 drop out rate on \inghamOne data with different number of CPUs.
 
