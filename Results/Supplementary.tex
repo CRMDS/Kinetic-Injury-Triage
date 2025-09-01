@@ -6,6 +6,8 @@
 \usepackage{hyperref}
 \usepackage{booktabs}%
 \usepackage{xspace}
+\usepackage{orcidlink}  % prettier orcid links
+
 
 \geometry{top=2cm,bottom=2cm,left=1in,right=1in}
 
@@ -16,8 +18,8 @@
 \newcommand{\figwidthhh}{0.45\textwidth}
 
 % command for data sets
-\newcommand{\inghamOne}{In-house One\xspace}   % Note: this is the 1k Ingham data labelled by John 
-\newcommand{\inghamTwo}{In-house Two\xspace}  % Note: this is second set of 1k Ingham data labelled by Midhun and Jim
+\newcommand{\inghamOne}{CEDRIC One\xspace}   % Note: this is the 1k Ingham data labelled by John 
+\newcommand{\inghamTwo}{CEDRIC Two\xspace}  % Note: this is second set of 1k Ingham data labelled by Midhun and Jim
 
 
 \usepackage{subcaption}
@@ -25,7 +27,13 @@
 \captionsetup[subfigure]{labelfont=bf,singlelinecheck=off,justification=raggedright,labelformat=simple}
 
 \title{Supplementary Material -- NCI results}
-\author{Paper 146}
+\author{Midhun Shyam\orcidlink{0009-0006-2930-2135} \and
+Jim Basilakis\orcidlink{0000-0002-7440-1320} \and
+Kieran Luken\orcidlink{0000-0002-6147-693X} \and
+Steven Thomas\orcidlink{0000-0002-2416-0020} \and
+John Crozier\orcidlink{0000-0002-4773-8518} \and
+Paul M Middleton\orcidlink{0000-0003-0760-1098} \and
+X. Rosalind Wang\orcidlink{0000-0001-5454-6197}}
 \date{}
 % \author{redacted}
 % \date{\today}
@@ -33,6 +41,9 @@
 \begin{document}
 
 \maketitle
+
+This document presents all the results as computed from the NCI facility. Note that the results may vary slightly from the main SM and the main paper even though the same seeds were used. This is due to the fact that the NCI facility uses different hardware and software configurations.
+
 
 %-------------------------------------------------------------------------------
 % SECTION 1
@@ -122,6 +133,7 @@ SGD & $0.850 \pm 0.010$ & $0.859 \pm 0.016$ & $0.850 \pm 0.020$ & $0.929 \pm 0.0
     \begin{tabular}{@{}lcccccc@{}}
     \toprule
     &  \multicolumn{6}{c}{Time (Min) (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} \midrule 
+    Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
 Adam & $14.695 \pm 2.897$ & $14.430 \pm 3.161$ & $13.378 \pm 2.273$ & $10.672 \pm 2.452$ & $10.692 \pm 2.094$ & $9.663 \pm 2.228$ \\
 AdamW & $8.558 \pm 0.426$ & $8.743 \pm 0.619$ & $8.850 \pm 0.407$ & $7.645 \pm 1.080$ & $7.417 \pm 0.751$ & $7.463 \pm 0.342$ \\
 SGD & $100.977 \pm 0.284$ & $101.102 \pm 0.633$ & $101.120 \pm 1.060$ & $88.945 \pm 15.327$ & $89.892 \pm 12.977$ & $99.085 \pm 4.641$ \\
@@ -165,6 +177,7 @@ SGD & $0.899 \pm 0.027$ & $0.901 \pm 0.026$ & $0.895 \pm 0.029$ & $0.938 \pm 0.0
     \begin{tabular}{@{}lcccccc@{}}
     \toprule
     &  \multicolumn{6}{c}{Time (Min) (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} \midrule
+    Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
 Adam & $12.845 \pm 3.445$ & $13.223 \pm 2.178$ & $12.377 \pm 2.736$ & $10.777 \pm 1.497$ & $10.902 \pm 3.138$ & $11.192 \pm 2.510$ \\
 AdamW & $7.690 \pm 0.518$ & $7.795 \pm 0.617$ & $7.548 \pm 0.663$ & $7.007 \pm 0.422$ & $7.772 \pm 0.810$ & $7.902 \pm 1.703$ \\
 SGD & $104.477 \pm 0.615$ & $104.742 \pm 0.522$ & $104.347 \pm 0.521$ & $80.717 \pm 18.145$ & $84.183 \pm 23.296$ & $83.953 \pm 21.729$ \\
@@ -246,7 +259,6 @@ SGD & $104.477 \pm 0.615$ & $104.742 \pm 0.522$ & $104.347 \pm 0.521$ & $80.717 
 \end{figure}
 
 \newpage
-
 
 %-------------------------------------------------------------------------------
 % SECTION 2
@@ -386,6 +398,8 @@ SGD & $195.300 \pm 13.200$ & $227.700 \pm 26.270$ & $218.800 \pm 21.350$ & $211.
 		
 \end{table}
 
+
+
 \begin{figure}[h!] 
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthh}
@@ -462,11 +476,14 @@ SGD & $195.300 \pm 13.200$ & $227.700 \pm 26.270$ & $218.800 \pm 21.350$ & $211.
 
 
 
+
 %-------------------------------------------------------------------------------
 % SECTION 3
 %-------------------------------------------------------------------------------
 
 \section{Further fine-tuning on In-House One Data}
+
+Note that NN1 was used in this set experiment as we had the time to run them. As suspected, their results are much worse than the other two networks.
 
 \begin{table}[h!]
 	\caption{Accuracy, F1-score and training time on CPU of further fine-tuning (domain adaptation) on \inghamOne data with the different optimiser using NN1, 
@@ -593,6 +610,7 @@ AdamW & $87.885 \pm 14.763$ & $100.350 \pm 25.593$ & $105.780 \pm 17.340$ & $97.
 	\end{table}	
 
 
+
 \begin{figure}[h!]
 	\begin{center}
 		\begin{subfigure}[b]{\figwidthhh}
@@ -637,6 +655,7 @@ AdamW & $87.885 \pm 14.763$ & $100.350 \pm 25.593$ & $105.780 \pm 17.340$ & $97.
 \end{figure}
 
 
+
 \clearpage
 %-------------------------------------------------------------------------------
 % SECTION 4
@@ -654,7 +673,7 @@ AdamW & $87.885 \pm 14.763$ & $100.350 \pm 25.593$ & $105.780 \pm 17.340$ & $97.
 		\begin{tabular}{@{}lcccccc@{}}
 		\toprule
 		&  \multicolumn{6}{c}{Accuracy (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
-		Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
 Adam & $0.931 \pm 0.004$ & $0.931 \pm 0.005$ & $0.931 \pm 0.005$ & $0.936 \pm 0.005$ & $0.933 \pm 0.004$ & $0.933 \pm 0.004$ \\
 AdamW & $0.922 \pm 0.006$ & $0.923 \pm 0.006$ & $0.924 \pm 0.008$ & $0.929 \pm 0.006$ & $0.926 \pm 0.006$ & $0.930 \pm 0.005$ \\
 		\bottomrule
@@ -666,7 +685,7 @@ AdamW & $0.922 \pm 0.006$ & $0.923 \pm 0.006$ & $0.924 \pm 0.008$ & $0.929 \pm 0
 		\begin{tabular}{@{}lcccccc@{}}
 		\toprule
 		&  \multicolumn{6}{c}{F1 Score (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
-	Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
 Adam & $0.920 \pm 0.004$ & $0.919 \pm 0.005$ & $0.919 \pm 0.006$ & $0.925 \pm 0.006$ & $0.921 \pm 0.004$ & $0.921 \pm 0.004$ \\
 AdamW & $0.909 \pm 0.006$ & $0.910 \pm 0.006$ & $0.912 \pm 0.008$ & $0.917 \pm 0.006$ & $0.915 \pm 0.007$ & $0.919 \pm 0.005$ \\
 			\bottomrule
@@ -695,7 +714,7 @@ AdamW & $226.800 \pm 39.670$ & $195.900 \pm 19.920$ & $200.000 \pm 16.750$ & $21
 		\begin{tabular}{@{}lcccccc@{}}
 		\toprule
 		&  \multicolumn{6}{c}{Accuracy (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
-		Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
 Adam & $0.931 \pm 0.004$ & $0.931 \pm 0.005$ & $0.931 \pm 0.005$ & $0.936 \pm 0.005$ & $0.933 \pm 0.004$ & $0.933 \pm 0.004$ \\
 AdamW & $0.922 \pm 0.006$ & $0.923 \pm 0.006$ & $0.924 \pm 0.008$ & $0.929 \pm 0.006$ & $0.926 \pm 0.006$ & $0.930 \pm 0.005$ \\
 		\bottomrule
@@ -707,8 +726,8 @@ AdamW & $0.922 \pm 0.006$ & $0.923 \pm 0.006$ & $0.924 \pm 0.008$ & $0.929 \pm 0
 		\begin{tabular}{@{}lcccccc@{}}
 		\toprule
 		&  \multicolumn{6}{c}{F1 Score (Learning rate, Drop out rate)} \\ \cmidrule(l){2-7} 
-	Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
-	Adam & $0.920 \pm 0.004$ & $0.919 \pm 0.005$ & $0.919 \pm 0.006$ & $0.925 \pm 0.006$ & $0.921 \pm 0.004$ & $0.921 \pm 0.004$ \\
+Optimiser & (0.0001, 0.15) & (0.0001, 0.2) & (0.0001, 0.25) & (0.0005, 0.15) & (0.0005, 0.2) & (0.0005, 0.25) \\ \midrule
+Adam & $0.920 \pm 0.004$ & $0.919 \pm 0.005$ & $0.919 \pm 0.006$ & $0.925 \pm 0.006$ & $0.921 \pm 0.004$ & $0.921 \pm 0.004$ \\
 AdamW & $0.909 \pm 0.006$ & $0.910 \pm 0.006$ & $0.912 \pm 0.008$ & $0.917 \pm 0.006$ & $0.915 \pm 0.007$ & $0.919 \pm 0.005$ \\
 		\bottomrule
 		\end{tabular}
