@@ -21,6 +21,9 @@ Results/*.fdb_latexmk
 Results/*.fls
 Results/*.synctex.gz
 Results/*.out
+Results/Supplementary.bbl
+Results/Supplementary.blg
+Results/references.bib
 
 # R temporary files
 Results/*.Rhistory
