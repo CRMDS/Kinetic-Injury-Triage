@@ -1,10 +1,13 @@
 # Kinetic-Injury-Triage
 
-This repository contains the full pipeline for **clinical NLP classification of kinetic injury triage notes** using Bio_ClinicalBERT.  
-It includes scripts for **pretraining, fine-tuning, prediction, hyperparameter search, and statistical analysis**, designed to run across:
+This repository contains the full pipeline for the paper: *Classification of kinetic-related injury in hospital triage data using NLP*, accepted at the 21st International Conference on Advanced Data Mining and Applications, 2025. The paper is also on [arXiv](https://arxiv.org/abs/2509.04969). 
+
+This repository includes scripts for **pretraining, fine-tuning, prediction, hyperparameter search, and statistical analysis**, designed to run across:
 
 - **HPC (using either Slurm or PBS schedulers)**  
 - **Local machine (Python scripts only)**
+
+Full results are at [WSU data repository](https://rds.westernsydney.edu.au/Schools/CDMS/2025/KIT/). Note that these results were run on the NCI, therefore are slightly different from the results in the paper due to hardware differences. The full NCI results analysis are in the `NCI_results` branch. 
 
 # Repository Structure
 
