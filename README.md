@@ -1,6 +1,6 @@
 # Kinetic-Injury-Triage
 
-This repository contains the full pipeline for the paper: *Classification of kinetic-related injury in hospital triage data using NLP*, accepted at the 21st International Conference on Advanced Data Mining and Applications, 2025. The paper is also on [arXiv](https://arxiv.org/abs/2509.04969). 
+This repository contains the full pipeline for the paper Classification of Kinetic-Related Injury in Hospital Triage Data Using NLP, published in Advanced Data Mining and Applications: 21st International Conference, ADMA 2025, Kyoto, Japan, October 22–24, 2025, Proceedings, Part III — Lecture Notes in Computer Science (LNCS, vol. 16199), Lecture Notes in Artificial Intelligence subseries, © 2026, Springer Nature.[DOI](10.1007/978-981-95-3459-3). 
 
 This repository includes scripts for **pretraining, fine-tuning, prediction, hyperparameter search, and statistical analysis**, designed to run across:
 
